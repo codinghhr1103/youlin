@@ -1,18 +1,28 @@
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class RegisterIn(BaseModel):
     username: str = Field(min_length=2, max_length=20)
     display_name: str = Field(min_length=1, max_length=20)
-    password: str = Field(min_length=6, max_length=64)
+    password: str = Field(min_length=8, max_length=64)
+    contact_type: Literal["email", "phone"]
+    contact: str = Field(min_length=5, max_length=120)
     city: str = ""
     bio: str = ""
+    agree: bool = False
+
+    @model_validator(mode="after")
+    def require_agreement(self):
+        if not self.agree:
+            raise ValueError("请先同意用户协议与隐私政策")
+        return self
 
 
 class LoginIn(BaseModel):
-    username: str
+    identifier: str = Field(min_length=2, max_length=120)
     password: str
 
 
@@ -22,6 +32,10 @@ class UserOut(BaseModel):
     display_name: str
     city: str
     bio: str
+    email: str | None = None
+    phone: str | None = None
+    role: str = "user"
+    banned: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

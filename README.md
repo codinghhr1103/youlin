@@ -31,6 +31,16 @@
 - `xiaofeng` 小封（成都）
 - `miaopiao` 喵票（上海）
 
+管理员（本地默认，可用环境变量覆盖）：
+
+- 用户名：`youlinadmin`
+- 密码：`YoulinAdmin!2026`
+- 邮箱：`youlinadmin@youlin.local`
+
+环境变量：`ADMIN_USERNAME`、`ADMIN_PASSWORD`、`ADMIN_EMAIL`。上线后请改掉默认密码。
+
+注册需要填写邮箱或手机号作为联系方式，并勾选协议。站点**不会发送**短信或邮件验证码（这两类发送都要付费通道）。登录可用用户名、邮箱或手机号。
+
 ## 部署到 Render
 
 仓库已包含 `render.yaml`。把代码推到 GitHub 后：

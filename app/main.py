@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.db import Base, engine, SessionLocal
-from app.routers import auth, collection, posts, stamps, swaps, users
+from app.routers import admin, auth, collection, posts, stamps, swaps, users
 from app.seed import seed_if_empty
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
@@ -17,6 +17,7 @@ app.include_router(collection.router, prefix="/api")
 app.include_router(posts.router, prefix="/api")
 app.include_router(swaps.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 
 @app.on_event("startup")

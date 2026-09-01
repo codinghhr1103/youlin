@@ -29,7 +29,13 @@ async function api(path, options = {}) {
   const res = await fetch(`/api${path}`, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.detail || "请求失败");
+    const detail = data.detail;
+    let message = "请求失败";
+    if (typeof detail === "string") message = detail;
+    else if (Array.isArray(detail) && detail.length) {
+      message = String(detail[0].msg || detail[0]).replace(/^Value error,\s*/i, "");
+    }
+    throw new Error(message);
   }
   return data;
 }
@@ -87,6 +93,7 @@ function layout(inner, active) {
         <a href="/feed" data-link class="${active === "feed" ? "active" : ""}">晒票</a>
         <a href="/album" data-link class="${active === "album" ? "active" : ""}">我的邮册</a>
         <a href="/swap" data-link class="${active === "swap" ? "active" : ""}">交换</a>
+        ${state.user?.role === "admin" ? `<a href="/admin" data-link class="${active === "admin" ? "active" : ""}">管理</a>` : ""}
       </nav>
       <div class="userchip">
         ${
@@ -143,31 +150,65 @@ function landingView() {
 }
 
 function authView(mode) {
-  const title = mode === "login" ? "回到邮册" : "成为邮邻";
+  if (mode === "login") {
+    return `
+      <div class="auth-layout">
+        <form class="panel form auth-card" id="auth-form" onsubmit="return false">
+          <div class="kicker">账户登录</div>
+          <h2 style="font-family:var(--serif);margin:8px 0 0">欢迎回来</h2>
+          <p class="muted">使用用户名、邮箱或手机号登录。</p>
+          <label>账号
+            <input name="identifier" autocomplete="username" placeholder="用户名 / 邮箱 / 手机号" required />
+          </label>
+          <label>密码
+            <input name="password" type="password" autocomplete="current-password" placeholder="请输入密码" required />
+          </label>
+          <button class="btn" type="submit">登录</button>
+          <p class="flash" id="auth-error"></p>
+          <p class="tiny">还没有账号？<a href="/register" data-link>注册邮邻</a></p>
+        </form>
+      </div>
+    `;
+  }
   return `
     <div class="auth-layout">
-      <form class="panel form" id="auth-form">
-        <div class="kicker">YOULIN</div>
-        <h2 style="font-family:var(--serif);margin:8px 0 0">${title}</h2>
-        <p class="muted">试玩账号：fangcun / youlin123</p>
-        ${
-          mode === "register"
-            ? `<input name="display_name" placeholder="怎么称呼你" required />
-               <input name="city" placeholder="城市，比如杭州" />`
-            : ""
-        }
-        <input name="username" placeholder="用户名" required />
-        <input name="password" type="password" placeholder="密码" required />
-        ${mode === "register" ? `<textarea name="bio" placeholder="你在集什么？"></textarea>` : ""}
-        <button class="btn" type="submit">${mode === "login" ? "登录" : "建立邮册"}</button>
+      <form class="panel form auth-card" id="auth-form" onsubmit="return false">
+        <div class="kicker">创建账号</div>
+        <h2 style="font-family:var(--serif);margin:8px 0 0">加入邮邻</h2>
+        <p class="muted">填写联系方式以便账号找回与站内通知。目前不会发送短信或邮件验证码。</p>
+        <label>称呼
+          <input name="display_name" placeholder="怎么称呼你" required />
+        </label>
+        <label>用户名
+          <input name="username" autocomplete="username" placeholder="字母开头，可含数字和下划线" required />
+        </label>
+        <label>城市
+          <input name="city" placeholder="例如杭州" />
+        </label>
+        <div class="contact-switch" id="contact-switch">
+          <button type="button" class="chip active" data-type="email">邮箱</button>
+          <button type="button" class="chip" data-type="phone">手机号</button>
+        </div>
+        <input type="hidden" name="contact_type" value="email" />
+        <label id="contact-label">邮箱
+          <input name="contact" type="email" placeholder="you@example.com" required />
+        </label>
+        <label>密码
+          <input name="password" type="password" autocomplete="new-password" minlength="8" placeholder="至少 8 位" required />
+        </label>
+        <label>确认密码
+          <input name="password_confirm" type="password" autocomplete="new-password" minlength="8" placeholder="再输入一次" required />
+        </label>
+        <label>集邮简介（选填）
+          <textarea name="bio" placeholder="你在集什么？"></textarea>
+        </label>
+        <label class="agree">
+          <input type="checkbox" name="agree" value="true" required />
+          <span>我已阅读并同意 <a href="/terms" data-link>用户协议</a> 与隐私政策</span>
+        </label>
+        <button class="btn" type="submit">注册并进入</button>
         <p class="flash" id="auth-error"></p>
-        <p class="tiny">
-          ${
-            mode === "login"
-              ? `还没有账号？<a href="/register" data-link>加入邮邻</a>`
-              : `已经有邮册了？<a href="/login" data-link>登录</a>`
-          }
-        </p>
+        <p class="tiny">已经有邮册了？<a href="/login" data-link>登录</a></p>
       </form>
     </div>
   `;
@@ -181,20 +222,142 @@ async function renderLanding(root) {
 
 async function renderAuth(root, mode) {
   root.innerHTML = layout(authView(mode), "");
+  const switcher = qs("#contact-switch");
+  if (switcher) {
+    switcher.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-type]");
+      if (!btn) return;
+      switcher.querySelectorAll(".chip").forEach((chip) => chip.classList.remove("active"));
+      btn.classList.add("active");
+      qs("input[name=contact_type]").value = btn.dataset.type;
+      const isEmail = btn.dataset.type === "email";
+      qs("#contact-label").innerHTML = isEmail
+        ? `邮箱<input name="contact" type="email" placeholder="you@example.com" required />`
+        : `手机号<input name="contact" type="tel" placeholder="11 位中国大陆手机号" required />`;
+    });
+  }
   qs("#auth-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
-    const body = Object.fromEntries(form.entries());
+    const error = qs("#auth-error");
     try {
-      const data = await api(mode === "login" ? "/auth/login" : "/auth/register", {
+      if (mode === "register") {
+        if (form.get("password") !== form.get("password_confirm")) {
+          error.textContent = "两次输入的密码不一致";
+          return;
+        }
+        const data = await api("/auth/register", {
+          method: "POST",
+          body: JSON.stringify({
+            username: form.get("username"),
+            display_name: form.get("display_name"),
+            password: form.get("password"),
+            contact_type: form.get("contact_type"),
+            contact: form.get("contact"),
+            city: form.get("city") || "",
+            bio: form.get("bio") || "",
+            agree: form.get("agree") === "true",
+          }),
+        });
+        saveSession(data.token, data.user);
+        navigate("/feed");
+        return;
+      }
+      const data = await api("/auth/login", {
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          identifier: form.get("identifier"),
+          password: form.get("password"),
+        }),
       });
       saveSession(data.token, data.user);
-      navigate("/feed");
+      navigate(data.user.role === "admin" ? "/admin" : "/feed");
     } catch (err) {
-      qs("#auth-error").textContent = err.message;
+      error.textContent = err.message;
     }
+  });
+}
+
+function termsView() {
+  return `
+    <article class="panel legal">
+      <div class="kicker">YOULIN</div>
+      <h2 style="font-family:var(--serif)">用户协议与隐私政策（摘要）</h2>
+      <p>邮邻是个人非经营性集邮社区原型，不收费、不担保交易、不提供支付。</p>
+      <p>注册时收集的用户名、称呼、城市、简介，以及你选择的邮箱或手机号，仅用于登录、账号识别和站内通知预留。目前不会向你的邮箱或手机发送验证码。</p>
+      <p>你可以随时申请更正资料或停用账号。管理员有权处理违法信息和停用违规账号。</p>
+      <p class="tiny"><a href="/register" data-link>返回注册</a></p>
+    </article>
+  `;
+}
+
+async function renderAdmin(root) {
+  requireAuth();
+  if (state.user.role !== "admin") {
+    root.innerHTML = layout(`<div class="empty">需要管理员权限。</div>`, "admin");
+    return;
+  }
+  const users = await api("/admin/users");
+  root.innerHTML = layout(
+    `
+      <div class="section-title">
+        <div>
+          <h2>用户管理</h2>
+          <p class="muted">查看注册用户，停用或恢复账号。不会发送短信或邮件。</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>用户</th>
+              <th>联系方式</th>
+              <th>角色</th>
+              <th>状态</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users
+              .map(
+                (user) => `
+              <tr>
+                <td>
+                  <strong>${escapeHtml(user.display_name)}</strong>
+                  <div class="tiny">@${escapeHtml(user.username)} · ${escapeHtml(user.city || "未填城市")}</div>
+                </td>
+                <td class="tiny">${escapeHtml(user.email || user.phone || "—")}</td>
+                <td>${user.role === "admin" ? "管理员" : "成员"}</td>
+                <td>${user.banned ? "已停用" : "正常"}</td>
+                <td>
+                  ${
+                    user.role === "admin"
+                      ? `<span class="tiny">—</span>`
+                      : user.banned
+                        ? `<button class="btn unban" data-id="${user.id}">恢复</button>`
+                        : `<button class="ghost ban" data-id="${user.id}">停用</button>`
+                  }
+                </td>
+              </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `,
+    "admin"
+  );
+  root.querySelectorAll(".ban").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await api(`/admin/users/${btn.dataset.id}/ban`, { method: "POST" });
+      await render();
+    });
+  });
+  root.querySelectorAll(".unban").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await api(`/admin/users/${btn.dataset.id}/unban`, { method: "POST" });
+      await render();
+    });
   });
 }
 
@@ -572,6 +735,8 @@ async function render() {
     if (path === "/") await renderLanding(root);
     else if (path === "/login") await renderAuth(root, "login");
     else if (path === "/register") await renderAuth(root, "register");
+    else if (path === "/terms") root.innerHTML = layout(termsView(), "");
+    else if (path === "/admin") await renderAdmin(root);
     else if (path === "/explore") await renderExplore(root);
     else if (path === "/feed") await renderFeed(root);
     else if (path === "/album") await renderAlbum(root);

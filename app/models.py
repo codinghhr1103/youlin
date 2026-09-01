@@ -15,6 +15,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(200))
     city: Mapped[str] = mapped_column(String(40), default="")
     bio: Mapped[str] = mapped_column(String(240), default="")
+    email: Mapped[str | None] = mapped_column(String(120), unique=True, index=True, nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(20), unique=True, index=True, nullable=True)
+    role: Mapped[str] = mapped_column(String(16), default="user")
+    banned: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     items: Mapped[list["CollectionItem"]] = relationship(back_populates="user")

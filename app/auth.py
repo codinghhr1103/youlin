@@ -55,6 +55,8 @@ def get_current_user(
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在")
+    if user.banned:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="账号已被停用")
     return user
 
 
@@ -66,6 +68,17 @@ def get_optional_user(
         return None
     try:
         payload = jwt.decode(creds.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        return db.get(User, int(payload["sub"]))
+        user = db.get(User, int(payload["sub"]))
+        if user and user.banned:
+            return None
+        return user
     except Exception:
         return None
+
+
+def get_admin_user(
+    user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    if user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
+    return user

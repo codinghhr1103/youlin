@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.auth import hash_password
 from app.db import engine
 from app.models import CollectionItem, Post, PostLike, Stamp, Swap, User
+from app import settings
 
 # 票图均来自维基共享，且为 1931 年前发行的中国邮票（公有领域 / 自由许可）。
 # 新中国新邮原图仍受版权保护，故不收录。
@@ -391,6 +392,7 @@ USERS = [
         "display_name": "林方寸",
         "city": "杭州",
         "bio": "从海关大龙开始。现在做两个专题：龙纹，以及红印花加盖。",
+        "email": "fangcun@demo.youlin",
         "password": "youlin123",
     },
     {
@@ -398,6 +400,7 @@ USERS = [
         "display_name": "阿戳",
         "city": "青岛",
         "bio": "商埠票和口岸实寄。票可以重复，戳不能将就。",
+        "email": "achuo@demo.youlin",
         "password": "youlin123",
     },
     {
@@ -405,6 +408,7 @@ USERS = [
         "display_name": "小封",
         "city": "成都",
         "bio": "民初加盖和自制封。觉得一枚票被实寄过，才算真正走过一遭。",
+        "email": "xiaofeng@demo.youlin",
         "password": "youlin123",
     },
     {
@@ -412,6 +416,7 @@ USERS = [
         "display_name": "喵票",
         "city": "上海",
         "bio": "龙马、红印花，以及一切圆眼睛的动物和花。",
+        "email": "miaopiao@demo.youlin",
         "password": "youlin123",
     },
 ]
@@ -433,6 +438,50 @@ def ensure_stamp_columns() -> None:
         for name, ddl in additions.items():
             if name not in cols:
                 conn.execute(text(f"ALTER TABLE stamps ADD COLUMN {name} {ddl}"))
+
+
+def ensure_user_columns() -> None:
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    cols = {col["name"] for col in inspector.get_columns("users")}
+    additions = {
+        "email": "VARCHAR(120)",
+        "phone": "VARCHAR(20)",
+        "role": "VARCHAR(16) DEFAULT 'user'",
+        "banned": "INTEGER DEFAULT 0",
+    }
+    with engine.begin() as conn:
+        for name, ddl in additions.items():
+            if name not in cols:
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {name} {ddl}"))
+        conn.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
+        conn.execute(text("UPDATE users SET banned = 0 WHERE banned IS NULL"))
+
+
+def ensure_admin(db: Session) -> None:
+    user = db.query(User).filter(User.username == settings.ADMIN_USERNAME).first()
+    if user:
+        user.role = "admin"
+        user.banned = False
+        user.email = settings.ADMIN_EMAIL
+        user.password_hash = hash_password(settings.ADMIN_PASSWORD)
+        if not user.display_name:
+            user.display_name = "邮邻管理员"
+        return
+    taken = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+    email = None if taken else settings.ADMIN_EMAIL
+    db.add(
+        User(
+            username=settings.ADMIN_USERNAME,
+            display_name="邮邻管理员",
+            password_hash=hash_password(settings.ADMIN_PASSWORD),
+            email=email,
+            role="admin",
+            city="杭州",
+            bio="站点管理员",
+        )
+    )
 
 
 def _stamp_by_catalog(db: Session, catalog_no: str) -> Stamp:
@@ -481,7 +530,9 @@ def _seed_demo_people(db: Session) -> None:
                 display_name=row["display_name"],
                 city=row["city"],
                 bio=row["bio"],
+                email=row.get("email"),
                 password_hash=hash_password(row["password"]),
+                role="user",
             )
             db.add(user)
             db.flush()
@@ -492,6 +543,8 @@ def _seed_demo_people(db: Session) -> None:
             row = by_name.get(username)
             if row:
                 user.bio = row["bio"]
+                if row.get("email") and not user.email:
+                    user.email = row["email"]
 
     demo_ids = [user.id for user in users.values()]
     if db.query(CollectionItem).filter(CollectionItem.user_id.in_(demo_ids)).first():
@@ -580,6 +633,8 @@ def _seed_demo_people(db: Session) -> None:
 
 def seed_if_empty(db: Session) -> None:
     ensure_stamp_columns()
+    ensure_user_columns()
     _sync_stamps(db)
     _seed_demo_people(db)
+    ensure_admin(db)
     db.commit()
