@@ -1,0 +1,8 @@
+Set-Location $PSScriptRoot
+
+if (-not (Test-Path ".\.venv\Scripts\python.exe")) {
+    py -3 -m venv .venv
+}
+
+& .\.venv\Scripts\python.exe -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+& .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
