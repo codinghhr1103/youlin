@@ -27,7 +27,7 @@ def list_stamps(
             | Stamp.theme.like(like)
             | Stamp.description.like(like)
         )
-    return query.order_by(Stamp.year.desc(), Stamp.catalog_no.asc()).all()
+    return query.order_by(Stamp.year.asc(), Stamp.catalog_no.asc()).all()
 
 
 @router.get("/themes", response_model=list[str])

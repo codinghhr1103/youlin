@@ -57,11 +57,14 @@ function formatTime(iso) {
 }
 
 function stampCard(stamp, extra = "") {
+  const photo = stamp.image_path
+    ? `<img class="stamp-photo" src="${escapeHtml(stamp.image_path)}" alt="${escapeHtml(stamp.name)}" />`
+    : `<div class="stamp-mark">${escapeHtml(stamp.mark)}</div>`;
   return `
     <article class="stamp" style="--ink-color:${stamp.color}" data-stamp="${stamp.id}">
-      <div class="stamp-face">
+      <div class="stamp-face ${stamp.image_path ? "has-photo" : ""}">
         <div class="stamp-meta"><span>${escapeHtml(stamp.catalog_no)}</span><span>${stamp.year}</span></div>
-        <div class="stamp-mark">${escapeHtml(stamp.mark)}</div>
+        ${photo}
         <div class="stamp-name">${escapeHtml(stamp.name)}</div>
         <div class="stamp-value">${escapeHtml(stamp.face_value)} · ${escapeHtml(stamp.theme)}</div>
       </div>
@@ -106,7 +109,7 @@ function landingView() {
         <div class="kicker">方寸之间 · 遇见同好</div>
         <h1>给年轻集邮者的<br/>收藏与社交园地</h1>
         <p class="lede">
-          不是行情站，也不做拍卖行。邮邻让你整理数字邮册、晒出一枚票的故事，
+          不是行情站，也不做拍卖行。邮邻从海关大龙讲起：整理数字邮册、晒出一枚票的故事，
           再按「我有复品 / 我想要」找到可以交换的人。
         </p>
         <div class="hero-actions">
@@ -208,7 +211,7 @@ async function renderExplore(root) {
       <div class="section-title">
         <div>
           <h2>票图</h2>
-          <p class="muted">先从目录里认出一枚票，再放进自己的册子。</p>
+          <p class="muted">晚清民初的中国邮票原图。当代新邮因版权不收录原图，只做目录会另说。</p>
         </div>
       </div>
       <input class="search" id="search" value="${escapeHtml(q)}" placeholder="搜票名、志号、专题…" />
@@ -451,10 +454,15 @@ async function renderStamp(root, id) {
       <div class="detail">
         ${stampCard(stamp)}
         <div>
-          <div class="kicker">${escapeHtml(stamp.theme)}</div>
+          <div class="kicker">${escapeHtml(stamp.theme)} · ${escapeHtml(stamp.issuer || "中国邮政")}</div>
           <h2 style="font-family:var(--serif);font-size:36px;margin:8px 0">${escapeHtml(stamp.name)}</h2>
           <p class="muted">${escapeHtml(stamp.catalog_no)} · ${stamp.year} · ${escapeHtml(stamp.face_value)}</p>
           <p class="lede">${escapeHtml(stamp.description)}</p>
+          ${
+            stamp.image_source
+              ? `<p class="tiny">票图：${escapeHtml(stamp.image_credit || "维基共享")} · ${escapeHtml(stamp.image_license || "Public domain")} · <a href="${escapeHtml(stamp.image_source)}" target="_blank" rel="noreferrer">来源</a></p>`
+              : ""
+          }
           ${
             state.user
               ? `<div class="actions">

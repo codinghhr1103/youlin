@@ -42,6 +42,11 @@ class StampOut(BaseModel):
     color: str
     face_value: str
     description: str
+    issuer: str = ""
+    image_path: str = ""
+    image_license: str = ""
+    image_credit: str = ""
+    image_source: str = ""
 
     model_config = {"from_attributes": True}
 

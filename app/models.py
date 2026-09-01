@@ -33,6 +33,11 @@ class Stamp(Base):
     color: Mapped[str] = mapped_column(String(16))
     face_value: Mapped[str] = mapped_column(String(20), default="")
     description: Mapped[str] = mapped_column(Text, default="")
+    issuer: Mapped[str] = mapped_column(String(40), default="")
+    image_path: Mapped[str] = mapped_column(String(160), default="")
+    image_license: Mapped[str] = mapped_column(String(40), default="")
+    image_credit: Mapped[str] = mapped_column(String(160), default="")
+    image_source: Mapped[str] = mapped_column(String(240), default="")
 
 
 class CollectionItem(Base):
