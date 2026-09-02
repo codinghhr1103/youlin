@@ -210,6 +210,12 @@ select {
   color: var(--muted);
 }
 
+.muted a {
+  color: var(--teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -319,11 +325,14 @@ select {
 }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
   border: 1px solid var(--line);
   background: transparent;
   border-radius: 999px;
   padding: 7px 12px;
   cursor: pointer;
+  color: inherit;
 }
 
 .chip.active {
@@ -487,6 +496,84 @@ select {
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 18px;
+}
+
+.home-cards {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+a.card {
+  display: block;
+}
+
+a.card:hover {
+  border-color: color-mix(in srgb, var(--red) 35%, var(--line));
+}
+
+.guide-toc {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.guide-page {
+  display: grid;
+  gap: 36px;
+}
+
+.guide-section {
+  scroll-margin-top: 84px;
+}
+
+.guide-entries {
+  display: grid;
+  gap: 12px;
+}
+
+.guide-entry {
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px 20px;
+  scroll-margin-top: 84px;
+}
+
+.guide-entry h4 {
+  font-family: var(--serif);
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+.guide-entry p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.guide-note {
+  margin-top: 12px !important;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  font-size: 13px !important;
+}
+
+.guide-note span {
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--teal);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.guide-foot {
+  margin: 0;
+}
+
+.card h3 {
+  font-family: var(--serif);
+  margin: 0 0 8px;
 }
 
 .match {

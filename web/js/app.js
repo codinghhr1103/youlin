@@ -1,3 +1,5 @@
+import { GUIDE_SECTIONS } from "./guide.js";
+
 const TOKEN_KEY = "youlin_token";
 const USER_KEY = "youlin_user";
 
@@ -45,6 +47,13 @@ function navigate(path) {
   render();
 }
 
+function scrollToHash() {
+  const id = decodeURIComponent(location.hash.replace(/^#/, ""));
+  if (!id) return;
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function qs(sel, root = document) {
   return root.querySelector(sel);
 }
@@ -90,6 +99,7 @@ function layout(inner, active) {
       </a>
       <nav class="nav">
         <a href="/explore" data-link class="${active === "explore" ? "active" : ""}">目录</a>
+        <a href="/guide" data-link class="${active === "guide" ? "active" : ""}">入门</a>
         <a href="/feed" data-link class="${active === "feed" ? "active" : ""}">晒票</a>
         <a href="/album" data-link class="${active === "album" ? "active" : ""}">我的邮册</a>
         <a href="/swap" data-link class="${active === "swap" ? "active" : ""}">交换</a>
@@ -121,6 +131,7 @@ function landingView() {
         </p>
         <div class="hero-actions">
           <a class="btn" href="${state.user ? "/feed" : "/register"}" data-link>${state.user ? "去晒票" : "开始集邮"}</a>
+          <a class="ghost" href="/guide" data-link>集邮入门</a>
           <a class="ghost" href="/explore" data-link>查目录</a>
         </div>
       </div>
@@ -132,7 +143,7 @@ function landingView() {
         <p class="muted">记录、欣赏、交换。把邮票从货架上拿回册子里。</p>
       </div>
     </section>
-    <div class="grid">
+    <div class="grid home-cards">
       <article class="card">
         <h3>数字邮册</h3>
         <p class="muted">给每枚票标记「我有」「想要」「可换」，专题一目了然。</p>
@@ -145,6 +156,10 @@ function landingView() {
         <h3>可信交换</h3>
         <p class="muted">系统匹配缺品和复品，双方确认后再互换。不做担保交易。</p>
       </article>
+      <a class="card" href="/guide" data-link>
+        <h3>集邮入门</h3>
+        <p class="muted">背胶、齿孔、大版小版、老纪特和编年，先认这些词。</p>
+      </a>
     </div>
   `;
 }
@@ -480,7 +495,7 @@ async function renderExplore(root) {
       <div class="section-title">
         <div>
           <h2>邮票目录</h2>
-          <p class="muted">邮邻不自建世界目录，也不收录当代票图。查票、对照志号请用下面这些公开或商业目录。</p>
+          <p class="muted">邮邻不自建世界目录，也不收录当代票图。查票、对照志号请用下面这些公开或商业目录。名词不熟的话，可先看 <a href="/guide" data-link>集邮入门</a>。</p>
         </div>
       </div>
       <div class="catalog-page">
@@ -499,6 +514,66 @@ async function renderExplore(root) {
     `,
     "explore"
   );
+}
+
+function guideEntry(entry) {
+  return `
+    <article class="guide-entry" id="${escapeHtml(entry.id)}">
+      <h4>${escapeHtml(entry.title)}</h4>
+      <p>${escapeHtml(entry.body)}</p>
+      <p class="guide-note"><span>新手易混</span>${escapeHtml(entry.note)}</p>
+    </article>
+  `;
+}
+
+async function renderGuide(root) {
+  root.innerHTML = layout(
+    `
+      <div class="section-title">
+        <div>
+          <h2>集邮入门</h2>
+          <p class="muted">给刚拿起放大镜的人。讲名词，不报行情，也不做鉴定。</p>
+        </div>
+      </div>
+      <div class="guide-toc" id="guide-toc">
+        ${GUIDE_SECTIONS.map(
+          (section) =>
+            `<a class="chip" href="/guide#${encodeURIComponent(section.id)}" data-link>${escapeHtml(section.title)}</a>`
+        ).join("")}
+      </div>
+      <input class="search" id="guide-search" placeholder="搜背胶、齿孔、编年、小版张…" />
+      <div class="guide-page" id="guide-page">
+        ${GUIDE_SECTIONS.map(
+          (section) => `
+            <section class="guide-section" id="${escapeHtml(section.id)}">
+              <div class="catalog-group-head">
+                <h3>${escapeHtml(section.title)}</h3>
+                <p class="muted">${escapeHtml(section.intro)}</p>
+              </div>
+              <div class="guide-entries">${section.entries.map(guideEntry).join("")}</div>
+            </section>
+          `
+        ).join("")}
+        <p class="tiny guide-foot">这是入门说明，方便大家用同一套词说话。具体到某一枚票，仍以目录和实物为准。</p>
+      </div>
+    `,
+    "guide"
+  );
+  const search = qs("#guide-search");
+  const page = qs("#guide-page");
+  const applyFilter = () => {
+    const q = search.value.trim().toLowerCase();
+    page.querySelectorAll(".guide-section").forEach((section) => {
+      let visible = 0;
+      section.querySelectorAll(".guide-entry").forEach((entry) => {
+        const hit = !q || entry.textContent.toLowerCase().includes(q);
+        entry.hidden = !hit;
+        if (hit) visible += 1;
+      });
+      section.hidden = visible === 0;
+    });
+  };
+  search.addEventListener("input", applyFilter);
 }
 
 async function renderFeed(root) {
@@ -831,6 +906,7 @@ async function render() {
     else if (path === "/terms") root.innerHTML = layout(termsView(), "");
     else if (path === "/admin") await renderAdmin(root);
     else if (path === "/explore") await renderExplore(root);
+    else if (path === "/guide") await renderGuide(root);
     else if (path === "/feed") await renderFeed(root);
     else if (path === "/album") await renderAlbum(root);
     else if (path === "/swap") await renderSwap(root);
@@ -838,6 +914,7 @@ async function render() {
     else if (path.startsWith("/u/")) await renderProfile(root, decodeURIComponent(path.split("/")[2]));
     else root.innerHTML = layout(`<div class="empty">这一页还没印出来。</div>`, "");
     bindGlobal(root);
+    if (path === "/guide") scrollToHash();
   } catch (err) {
     if (err.message === "redirect") return;
     root.innerHTML = layout(`<div class="empty">${escapeHtml(err.message)}</div>`, "");
@@ -850,7 +927,13 @@ document.addEventListener("click", (event) => {
   const url = new URL(link.href);
   if (url.origin !== location.origin) return;
   event.preventDefault();
-  navigate(url.pathname + url.search);
+  const next = url.pathname + url.search + url.hash;
+  if (url.pathname === location.pathname && url.search === location.search && url.hash) {
+    history.pushState(null, "", next);
+    scrollToHash();
+    return;
+  }
+  navigate(next);
 });
 
 window.addEventListener("popstate", render);
