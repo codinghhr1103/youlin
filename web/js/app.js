@@ -71,13 +71,14 @@ function formatTime(iso) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function stampCard(stamp, extra = "") {
-  const photo = stamp.image_path
-    ? `<img class="stamp-photo" src="${escapeHtml(stamp.image_path)}" alt="${escapeHtml(stamp.name)}" />`
+function stampCard(stamp, extra = "", photoPath) {
+  const src = photoPath !== undefined ? photoPath : stamp.image_path;
+  const photo = src
+    ? `<img class="stamp-photo" src="${escapeHtml(src)}" alt="${escapeHtml(stamp.name)}" />`
     : `<div class="stamp-mark">${escapeHtml(stamp.mark)}</div>`;
   return `
     <article class="stamp" style="--ink-color:${stamp.color}" data-stamp="${stamp.id}">
-      <div class="stamp-face ${stamp.image_path ? "has-photo" : ""}">
+      <div class="stamp-face ${src ? "has-photo" : ""}">
         <div class="stamp-meta"><span>${escapeHtml(stamp.catalog_no)}</span><span>${stamp.year}</span></div>
         ${photo}
         <div class="stamp-name">${escapeHtml(stamp.name)}</div>
@@ -89,13 +90,116 @@ function stampCard(stamp, extra = "") {
   `;
 }
 
+function albumCard(item, caption) {
+  const text = caption !== undefined ? caption : item.note;
+  const extra = text
+    ? `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${escapeHtml(text)}</div>`
+    : "";
+  return stampCard(item.stamp, extra, item.photo_path || "");
+}
+
+function bindPhotoPreview(input, preview) {
+  if (!input || !preview) return;
+  input.addEventListener("change", () => {
+    const file = input.files && input.files[0];
+    if (preview.dataset.url) URL.revokeObjectURL(preview.dataset.url);
+    if (!file) {
+      preview.hidden = true;
+      preview.removeAttribute("src");
+      delete preview.dataset.url;
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    preview.dataset.url = url;
+    preview.src = url;
+    preview.hidden = false;
+  });
+}
+
+function bindOwnedPhotoRule(form) {
+  const status = form.querySelector("[name=status]");
+  const photo = form.querySelector("[name=photo]");
+  const hint = form.querySelector(".photo-hint");
+  if (!status || !photo) return;
+  const sync = () => {
+    const need = status.value !== "want";
+    photo.required = need;
+    if (hint) {
+      hint.textContent = need
+        ? "在册和可换必须拍实物图，不能用目录扫描件。"
+        : "缺品可以先不配图。";
+    }
+  };
+  status.addEventListener("change", sync);
+  sync();
+}
+
+function postmarkSvg(id, city, date) {
+  return `
+    <svg class="wm-postmark wm-${id}" viewBox="0 0 160 160" aria-hidden="true">
+      <defs>
+        <path id="pm-ring-${id}" d="M80,80 m-54,0 a54,54 0 1,1 108,0 a54,54 0 1,1 -108,0"/>
+      </defs>
+      <circle cx="80" cy="80" r="74" fill="none" stroke="currentColor" stroke-width="2.6"/>
+      <circle cx="80" cy="80" r="66" fill="none" stroke="currentColor" stroke-width="1"/>
+      <circle cx="80" cy="80" r="40" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <circle cx="80" cy="80" r="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+      <text fill="currentColor" font-size="11" letter-spacing="1.8">
+        <textPath href="#pm-ring-${id}" startOffset="0%">★ 邮邻 YOULIN · 方寸之间 · 同好 ★</textPath>
+      </text>
+      <text fill="currentColor" x="80" y="76" text-anchor="middle" font-size="14">${city}</text>
+      <text fill="currentColor" x="80" y="96" text-anchor="middle" font-size="10">${date}</text>
+    </svg>
+  `;
+}
+
+function decoStamp(mark, name, catalog, year, color, extraClass) {
+  return `
+    <div class="deco-stamp ${extraClass}" style="--ink-color:${color}">
+      <div class="deco-stamp-face">
+        <div class="deco-stamp-meta"><span>${catalog}</span><span>${year}</span></div>
+        <div class="deco-stamp-mark">${mark}</div>
+        <div class="deco-stamp-name">${name}</div>
+      </div>
+    </div>
+  `;
+}
+
+function siteOrnaments() {
+  return `
+    <div class="site-ornaments" aria-hidden="true">
+      ${postmarkSvg("tr", "杭州", "2026.09.02")}
+      ${postmarkSvg("bl", "销印", "已盖销")}
+      ${decoStamp("龙", "大龙", "海关", "1878", "#b4232c", "fs-a")}
+      ${decoStamp("雁", "飞雁", "普1", "1950", "#2c5e52", "fs-b")}
+      ${decoStamp("菊", "菊花", "特44", "1960", "#c6a36b", "fs-c")}
+      <svg class="deco-loupe" viewBox="0 0 92 92">
+        <circle cx="36" cy="36" r="22" fill="rgba(255,250,241,0.28)" stroke="currentColor" stroke-width="3"/>
+        <circle cx="36" cy="36" r="14" fill="none" stroke="currentColor" stroke-width="1"/>
+        <path d="M52 52 L80 80" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+        <path d="M28 28 l6 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <svg class="deco-tongs" viewBox="0 0 56 128">
+        <path d="M16 10 C16 48 26 82 27 118" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M40 10 C40 48 30 82 29 118" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M16 10 H40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M24 10 V4 H32 V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+  `;
+}
+
 function layout(inner, active) {
   const authed = Boolean(state.user);
   return `
+    ${siteOrnaments()}
     <header class="topbar">
       <a class="brand" href="/" data-link>
-        <strong>邮邻</strong>
-        <span>YOULIN</span>
+        <span class="brand-stamp">邻</span>
+        <span class="brand-text">
+          <strong>邮邻</strong>
+          <span>YOULIN</span>
+        </span>
       </a>
       <nav class="nav">
         <a href="/explore" data-link class="${active === "explore" ? "active" : ""}">目录</a>
@@ -117,6 +221,7 @@ function layout(inner, active) {
     </header>
     <main class="wrap">${inner}</main>
     <footer class="site-foot">
+      <span class="foot-cancel">邮邻销印</span>
       <a href="/terms" data-link>用户协议</a>
       ${authed ? `<span>·</span><a href="/settings" data-link>编辑资料</a>` : ""}
     </footer>
@@ -139,7 +244,14 @@ function landingView() {
           <a class="ghost" href="/explore" data-link>查目录</a>
         </div>
       </div>
-      <div class="hero-stamps" id="hero-stamps"></div>
+      <div class="hero-mail">
+        <div class="mail-labels">
+          <span class="mail-chip air">航空 PAR AVION</span>
+          <span class="mail-chip reg">挂号 REGISTERED</span>
+        </div>
+        <div class="hero-stamps" id="hero-stamps"></div>
+        <div class="wax-seal"><span>邻</span></div>
+      </div>
     </section>
     <section class="section-title">
       <div>
@@ -149,18 +261,47 @@ function landingView() {
     </section>
     <div class="grid home-cards">
       <article class="card">
+        <div class="card-glyph" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="7" y="6" width="20" height="28" rx="1.5"/>
+            <rect x="12" y="6" width="20" height="28" rx="1.5"/>
+            <rect x="16" y="12" width="10" height="13" rx="0.6"/>
+            <circle cx="28" cy="11" r="3.4"/>
+          </svg>
+        </div>
         <h3>数字邮册</h3>
-        <p class="muted">给每枚票标记「我有」「想要」「可换」，专题一目了然。</p>
+        <p class="muted">在册和可换只收你自己拍的实物图。缺的票可以先记下来。</p>
       </article>
       <article class="card">
+        <div class="card-glyph" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="8" y="5" width="16" height="22" rx="1"/>
+            <circle cx="26" cy="26" r="7.5"/>
+            <path d="M20 13h4M12 18h8" stroke-linecap="round"/>
+          </svg>
+        </div>
         <h3>晒票</h3>
         <p class="muted">写一枚票为什么留下来。齿孔、实寄、小学时的窗口。</p>
       </article>
       <article class="card">
+        <div class="card-glyph" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="5" y="10" width="14" height="18" rx="1" transform="rotate(-12 12 19)"/>
+            <rect x="21" y="10" width="14" height="18" rx="1" transform="rotate(10 28 19)"/>
+            <path d="M13 32c6 4 10 4 16 0" stroke-linecap="round"/>
+          </svg>
+        </div>
         <h3>可信交换</h3>
         <p class="muted">系统匹配缺品和复品，双方确认后再互换。不做担保交易。</p>
       </article>
       <a class="card" href="/guide" data-link>
+        <div class="card-glyph" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="6" y="8" width="14" height="18" rx="1"/>
+            <circle cx="26" cy="20" r="7"/>
+            <path d="M31 25l6 6" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </div>
         <h3>集邮入门</h3>
         <p class="muted">背胶、齿孔、大版小版、老纪特和编年，先认这些词。</p>
       </a>
@@ -173,6 +314,7 @@ function authView(mode) {
     return `
       <div class="auth-layout">
         <form class="panel form auth-card" id="auth-form" onsubmit="return false">
+          <div class="wax-seal wax-seal-sm"><span>邻</span></div>
           <div class="kicker">账户登录</div>
           <h2 style="font-family:var(--serif);margin:8px 0 0">欢迎回来</h2>
           <p class="muted">使用用户名、邮箱或手机号登录。</p>
@@ -192,6 +334,7 @@ function authView(mode) {
   return `
     <div class="auth-layout">
       <form class="panel form auth-card" id="auth-form" onsubmit="return false">
+        <div class="wax-seal wax-seal-sm"><span>邻</span></div>
         <div class="kicker">创建账号</div>
         <h2 style="font-family:var(--serif);margin:8px 0 0">加入邮邻</h2>
         <p class="muted">填写联系方式以便账号找回与站内通知。目前不会发送短信或邮件验证码。</p>
@@ -299,7 +442,8 @@ async function renderAuth(root, mode) {
 
 function termsView() {
   return `
-    <article class="panel legal">
+      <article class="panel legal">
+      <div class="wax-seal wax-seal-sm"><span>邻</span></div>
       <div class="kicker">YOULIN</div>
       <h2 style="font-family:var(--serif)">用户协议与隐私政策</h2>
       <p>邮邻（Youlin）是个人非经营性集邮社区原型：整理数字邮册、晒票、按缺品和复品匹配交换。不收费、不做交易、不报行情、不评估票价，也不提供支付或物流担保。</p>
@@ -307,9 +451,10 @@ function termsView() {
       <p>注册需用户名，以及邮箱或中国大陆手机号之一，用于登录和账号识别。站点目前不会发送短信或邮件验证码。邮箱和手机号只对本人和管理员可见，不会出现在晒票、邮友主页或交换匹配里。</p>
       <p>你可以在「编辑资料」中更正称呼、城市和简介。若需停用账号，请联系管理员。</p>
       <h3>你发布的内容</h3>
-      <p>晒票、邮册备注和交换留言由你负责。请勿发布违法信息、他人隐私，或未经授权的当代邮票原图。管理员有权处理违规内容并停用账号。</p>
+      <p>晒票、邮册备注、实拍图和交换留言由你负责。请勿发布违法信息、他人隐私，或未经授权的当代邮票原图。管理员有权处理违规内容并停用账号。</p>
       <h3>票图与目录</h3>
       <p>站内示例票图来自维基共享，且为 1931 年以前发行的中国邮票，版权状态为公有领域或自由许可。当代新邮原图不收录。查票请使用目录页列出的外部目录；邮邻不镜像商业编号体系。</p>
+      <p>你的邮册不使用目录扫描件。收入「在册」或标成「可换」时，必须上传自己拍摄的实物图；「想要」可以先不配图。</p>
       <h3>交换</h3>
       <p>交换是站内约定，双方自行联系寄递、验票。邮邻不经手邮票或款项，不对品相、真伪或纠纷承担责任。</p>
       <h3>开源</h3>
@@ -327,6 +472,7 @@ async function renderSettings(root) {
     `
       <div class="auth-layout">
         <form class="panel form auth-card" id="settings-form" onsubmit="return false">
+          <div class="wax-seal wax-seal-sm"><span>邻</span></div>
           <div class="kicker">资料</div>
           <h2 style="font-family:var(--serif);margin:8px 0 0">编辑资料</h2>
           <p class="muted">称呼、城市和简介会显示在主页上。联系方式只有你和管理员看得见。</p>
@@ -647,7 +793,11 @@ async function renderFeed(root) {
     owned = mine.filter((item) => item.status === "own" || item.status === "swap");
   }
   const composer = state.user
-    ? `<form class="panel composer" id="composer">
+    ? `<form class="panel composer letter-panel" id="composer">
+        <div class="mail-labels composer-labels">
+          <span class="mail-chip air">航空</span>
+          <span class="mail-chip reg">实寄</span>
+        </div>
         <textarea name="body" placeholder="今天想讲哪一枚票？" required></textarea>
         <div class="row">
           <select name="stamp_id">
@@ -680,7 +830,7 @@ async function renderFeed(root) {
                 .map(
                   (post) => `
             <article class="card post" data-post="${post.id}">
-              ${post.stamp ? stampCard(post.stamp) : `<div></div>`}
+              ${post.stamp ? stampCard(post.stamp, "", post.photo_path || "") : `<div></div>`}
               <div class="post-body">
                 <div class="tiny"><a href="/u/${encodeURIComponent(post.author.username)}" data-link>${escapeHtml(post.author.display_name)}</a> · ${formatTime(post.created_at)} · ${escapeHtml(post.author.city || "未知城市")}</div>
                 <p>${escapeHtml(post.body)}</p>
@@ -722,20 +872,20 @@ async function renderFeed(root) {
 
 async function renderAlbum(root) {
   requireAuth();
-  const items = await api("/me/collection");
+  const [items, stamps] = await Promise.all([api("/me/collection"), api("/stamps")]);
   const groups = {
     own: items.filter((i) => i.status === "own"),
     swap: items.filter((i) => i.status === "swap"),
     want: items.filter((i) => i.status === "want"),
   };
   const renderGroup = (title, key) => `
-    <section>
+    <section class="album-leaf">
       <div class="section-title"><h2>${title}</h2><span class="muted">${groups[key].length} 枚</span></div>
       <div class="grid">
         ${
           groups[key].length
-            ? groups[key].map((item) => stampCard(item.stamp, `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${escapeHtml(item.note)}</div>`)).join("")
-            : `<div class="empty">空着。可先去目录对照志号。</div>`
+            ? groups[key].map((item) => albumCard(item)).join("")
+            : `<div class="empty">${key === "want" ? "还没有缺品。可先对照志号记下来。" : "空着。拍一张实拍图收进来。"}</div>`
         }
       </div>
     </section>
@@ -752,6 +902,44 @@ async function renderAlbum(root) {
           <a class="ghost" href="/explore" data-link>查目录</a>
         </div>
       </div>
+      <form class="panel form album-add" id="album-add">
+        <div>
+          <div class="kicker">收入邮册</div>
+          <h3 style="font-family:var(--serif);margin:8px 0 0">拍一张自己的票</h3>
+          <p class="muted photo-hint">在册和可换必须拍实物图，不能用目录扫描件。</p>
+        </div>
+        <div class="album-add-grid">
+          <label class="photo-picker">实拍图
+            <input name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/*" />
+            <img class="photo-preview" alt="预览" hidden />
+          </label>
+          <div class="album-add-fields">
+            <label>是哪一枚
+              <select name="stamp_id" required>
+                <option value="" disabled selected>对照志号选择</option>
+                ${stamps
+                  .map(
+                    (stamp) =>
+                      `<option value="${stamp.id}">${escapeHtml(stamp.name)} · ${escapeHtml(stamp.catalog_no)}</option>`
+                  )
+                  .join("")}
+              </select>
+            </label>
+            <label>放在哪一页
+              <select name="status">
+                <option value="own">在册</option>
+                <option value="swap">可换复品</option>
+                <option value="want">想要</option>
+              </select>
+            </label>
+            <label>备注（选填）
+              <input name="note" maxlength="120" placeholder="例如：新票 · 全品" />
+            </label>
+            <button class="btn" type="submit">放进邮册</button>
+          </div>
+        </div>
+        <p class="flash" id="album-error"></p>
+      </form>
       <div class="stats">
         <div class="stat"><b>${groups.own.length}</b><span class="muted">在册</span></div>
         <div class="stat"><b>${groups.swap.length}</b><span class="muted">可换</span></div>
@@ -763,6 +951,19 @@ async function renderAlbum(root) {
     `,
     "album"
   );
+  const addForm = qs("#album-add");
+  bindOwnedPhotoRule(addForm);
+  bindPhotoPreview(qs("input[name=photo]", addForm), qs(".photo-preview", addForm));
+  addForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const error = qs("#album-error");
+    try {
+      await api("/me/collection", { method: "POST", body: new FormData(addForm) });
+      await render();
+    } catch (err) {
+      error.textContent = err.message;
+    }
+  });
 }
 
 async function renderSwap(root) {
@@ -858,10 +1059,11 @@ async function renderStamp(root, id) {
   if (state.user) mine = await api("/me/collection");
   const current = mine.find((item) => item.stamp.id === stamp.id);
   const noteValue = current?.note || "";
+  const detailCard = current?.photo_path ? stampCard(stamp, "", current.photo_path) : stampCard(stamp);
   root.innerHTML = layout(
     `
       <div class="detail">
-        ${stampCard(stamp)}
+        ${detailCard}
         <div>
           <div class="kicker">${escapeHtml(stamp.theme)} · ${escapeHtml(stamp.issuer || "中国邮政")}</div>
           <h2 style="font-family:var(--serif);font-size:36px;margin:8px 0">${escapeHtml(stamp.name)}</h2>
@@ -875,6 +1077,10 @@ async function renderStamp(root, id) {
           ${
             state.user
               ? `<div class="note-box">
+                   <label class="photo-picker">你的实拍图${current?.photo_path ? "（可换一张）" : "（收入邮册 / 可换时必填）"}
+                     <input id="stamp-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/*" />
+                     <img class="photo-preview" alt="预览" hidden />
+                   </label>
                    <label>邮册备注
                      <textarea id="stamp-note" maxlength="120" placeholder="例如：新票 · 全品，右边纸还在">${escapeHtml(noteValue)}</textarea>
                    </label>
@@ -889,8 +1095,8 @@ async function renderStamp(root, id) {
                    ${current ? `<button class="ghost collect" data-status="${current.status}">保存备注</button>` : ""}
                    ${current ? `<button class="ghost" id="remove">移出邮册</button>` : ""}
                  </div>
-                 <p class="tiny" id="stamp-status">${current ? `当前：${{ own: "在册", want: "想要", swap: "可换" }[current.status]}${current.note ? " · " + current.note : ""}` : "还没放进邮册"}</p>`
-              : `<p class="tiny">登录后就可以把这枚票放进自己的册子，并写下新/旧和品相。</p>`
+                 <p class="tiny" id="stamp-status">${current ? `当前：${{ own: "在册", want: "想要", swap: "可换" }[current.status]}${current.note ? " · " + current.note : ""}` : "在册和可换需要你自己拍的实物图"}</p>`
+              : `<p class="tiny">登录后就可以把这枚票放进自己的册子。在册和可换需要实拍图。</p>`
           }
         </div>
       </div>
@@ -899,6 +1105,8 @@ async function renderStamp(root, id) {
   );
   const noteInput = qs("#stamp-note");
   const chips = qs("#note-chips");
+  const photoInput = qs("#stamp-photo");
+  bindPhotoPreview(photoInput, qs(".photo-preview"));
   if (chips && noteInput) {
     chips.addEventListener("click", (event) => {
       const btn = event.target.closest("[data-chip]");
@@ -910,13 +1118,26 @@ async function renderStamp(root, id) {
     });
   }
   const collectNote = () => (noteInput ? noteInput.value.trim() : "");
+  const statusBox = qs("#stamp-status");
   root.querySelectorAll(".collect").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      await api("/me/collection", {
-        method: "POST",
-        body: JSON.stringify({ stamp_id: stamp.id, status: btn.dataset.status, note: collectNote() }),
-      });
-      await render();
+      const status = btn.dataset.status;
+      const file = photoInput && photoInput.files && photoInput.files[0];
+      if ((status === "own" || status === "swap") && !current?.photo_path && !file) {
+        if (statusBox) statusBox.textContent = "请先拍一张或选一张实拍图，再收入邮册。";
+        return;
+      }
+      const body = new FormData();
+      body.append("stamp_id", String(stamp.id));
+      body.append("status", status);
+      body.append("note", collectNote());
+      if (file) body.append("photo", file);
+      try {
+        await api("/me/collection", { method: "POST", body });
+        await render();
+      } catch (err) {
+        if (statusBox) statusBox.textContent = err.message;
+      }
     });
   });
   const remove = qs("#remove");
@@ -947,7 +1168,11 @@ async function renderProfile(root, username) {
         }
       </div>
       <div class="grid">
-        ${items.map((item) => stampCard(item.stamp, `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${item.status === "want" ? "想要" : item.status === "swap" ? "可换" : "在册"}</div>`)).join("")}
+        ${items
+          .map((item) =>
+            albumCard(item, item.status === "want" ? "想要" : item.status === "swap" ? "可换" : "在册")
+          )
+          .join("")}
       </div>
     `,
     "album"

@@ -1,10 +1,11 @@
 from sqlalchemy import inspect, or_, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.auth import hash_password
 from app.db import engine
 from app.models import CollectionItem, Post, PostLike, Stamp, Swap, User
 from app import settings
+from app.uploads import copy_catalog_image_as_photo
 
 # 票图均来自维基共享，且为 1931 年前发行的中国邮票（公有领域 / 自由许可）。
 # 新中国新邮原图仍受版权保护，故不收录。
@@ -459,6 +460,16 @@ def ensure_user_columns() -> None:
         conn.execute(text("UPDATE users SET banned = 0 WHERE banned IS NULL"))
 
 
+def ensure_collection_columns() -> None:
+    inspector = inspect(engine)
+    if "collection_items" not in inspector.get_table_names():
+        return
+    cols = {col["name"] for col in inspector.get_columns("collection_items")}
+    if "photo_path" not in cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE collection_items ADD COLUMN photo_path VARCHAR(200) DEFAULT ''"))
+
+
 def ensure_admin(db: Session) -> None:
     password = settings.ADMIN_PASSWORD
     if not password:
@@ -583,12 +594,18 @@ def _seed_demo_people(db: Session) -> None:
         ("miaopiao", "CIP-1910-2", "want", ""),
     ]
     for username, catalog_no, status, note in collections:
+        stamp = _stamp_by_catalog(db, catalog_no)
+        user = users[username]
+        photo_path = ""
+        if status in {"own", "swap"}:
+            photo_path = copy_catalog_image_as_photo(user.id, stamp.image_path)
         db.add(
             CollectionItem(
-                user_id=users[username].id,
-                stamp_id=_stamp_by_catalog(db, catalog_no).id,
+                user_id=user.id,
+                stamp_id=stamp.id,
                 status=status,
                 note=note,
+                photo_path=photo_path,
             )
         )
 
@@ -634,10 +651,27 @@ def _seed_demo_people(db: Session) -> None:
         )
 
 
+def _backfill_demo_photos(db: Session) -> None:
+    demo_names = {row["username"] for row in USERS}
+    items = (
+        db.query(CollectionItem)
+        .options(joinedload(CollectionItem.stamp))
+        .join(User)
+        .filter(User.username.in_(demo_names))
+        .all()
+    )
+    for item in items:
+        if item.status not in {"own", "swap"} or item.photo_path:
+            continue
+        item.photo_path = copy_catalog_image_as_photo(item.user_id, item.stamp.image_path)
+
+
 def seed_if_empty(db: Session) -> None:
     ensure_stamp_columns()
     ensure_user_columns()
+    ensure_collection_columns()
     _sync_stamps(db)
     _seed_demo_people(db)
+    _backfill_demo_photos(db)
     ensure_admin(db)
     db.commit()

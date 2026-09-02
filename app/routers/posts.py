@@ -5,16 +5,36 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, get_optional_user
 from app.db import get_db
-from app.models import Post, PostLike, Stamp, User
+from app.models import CollectionItem, Post, PostLike, Stamp, User
 from app.schemas import PostIn, PostOut, StampOut, UserPublic
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
-def serialize_post(post: Post, me: User | None) -> PostOut:
+def _photo_map(db: Session, posts: list[Post]) -> dict[tuple[int, int], str]:
+    pairs = [(post.user_id, post.stamp_id) for post in posts if post.stamp_id]
+    if not pairs:
+        return {}
+    user_ids = {user_id for user_id, _ in pairs}
+    stamp_ids = {stamp_id for _, stamp_id in pairs}
+    items = (
+        db.query(CollectionItem)
+        .filter(CollectionItem.user_id.in_(user_ids), CollectionItem.stamp_id.in_(stamp_ids))
+        .all()
+    )
+    return {(item.user_id, item.stamp_id): item.photo_path or "" for item in items}
+
+
+def serialize_post(post: Post, me: User | None, photos: dict[tuple[int, int], str] | None = None) -> PostOut:
     liked = False
     if me:
         liked = any(like.user_id == me.id for like in post.likes)
+    photo_path = ""
+    if post.stamp_id:
+        if photos is not None:
+            photo_path = photos.get((post.user_id, post.stamp_id), "")
+        else:
+            photo_path = ""
     return PostOut(
         id=post.id,
         body=post.body,
@@ -23,6 +43,7 @@ def serialize_post(post: Post, me: User | None) -> PostOut:
         liked=liked,
         author=UserPublic.model_validate(post.author),
         stamp=StampOut.model_validate(post.stamp) if post.stamp else None,
+        photo_path=photo_path,
     )
 
 
@@ -38,7 +59,8 @@ def feed(
         .limit(50)
         .all()
     )
-    return [serialize_post(post, me) for post in posts]
+    photos = _photo_map(db, posts)
+    return [serialize_post(post, me, photos) for post in posts]
 
 
 @router.post("", response_model=PostOut)
@@ -58,7 +80,7 @@ def create_post(
         .filter(Post.id == post.id)
         .one()
     )
-    return serialize_post(post, user)
+    return serialize_post(post, user, _photo_map(db, [post]))
 
 
 @router.post("/{post_id}/like", response_model=PostOut)
@@ -89,4 +111,4 @@ def toggle_like(
         .filter(Post.id == post_id)
         .one()
     )
-    return serialize_post(post, user)
+    return serialize_post(post, user, _photo_map(db, [post]))

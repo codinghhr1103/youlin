@@ -72,16 +72,11 @@ class StampOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class CollectionIn(BaseModel):
-    stamp_id: int
-    status: str = Field(pattern="^(own|want|swap)$")
-    note: str | None = Field(default=None, max_length=120)
-
-
 class CollectionOut(BaseModel):
     id: int
     status: str
     note: str
+    photo_path: str = ""
     stamp: StampOut
 
     model_config = {"from_attributes": True}
@@ -100,6 +95,7 @@ class PostOut(BaseModel):
     liked: bool
     author: UserPublic
     stamp: StampOut | None
+    photo_path: str = ""
 
 
 class SwapIn(BaseModel):

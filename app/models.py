@@ -53,6 +53,7 @@ class CollectionItem(Base):
     stamp_id: Mapped[int] = mapped_column(ForeignKey("stamps.id"), index=True)
     status: Mapped[str] = mapped_column(String(12), default="own")  # own / want / swap
     note: Mapped[str] = mapped_column(String(120), default="")
+    photo_path: Mapped[str] = mapped_column(String(200), default="")
 
     user: Mapped[User] = relationship(back_populates="items")
     stamp: Mapped[Stamp] = relationship()

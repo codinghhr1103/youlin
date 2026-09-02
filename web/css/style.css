@@ -22,9 +22,16 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  overflow-x: hidden;
   background:
-    radial-gradient(circle at 12px 12px, rgba(28, 22, 18, 0.035) 1px, transparent 1.5px) 0 0 / 24px 24px,
+    radial-gradient(circle at 12px 12px, rgba(28, 22, 18, 0.04) 1px, transparent 1.6px) 0 0 / 24px 24px,
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 27px,
+      rgba(28, 22, 18, 0.018) 27px 28px
+    ),
     linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--sans);
 }
@@ -34,7 +41,11 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(180, 35, 44, 0.04), transparent);
+  background:
+    radial-gradient(ellipse at 8% 12%, rgba(180, 35, 44, 0.05), transparent 42%),
+    radial-gradient(ellipse at 92% 88%, rgba(44, 94, 82, 0.06), transparent 46%),
+    linear-gradient(90deg, transparent, rgba(180, 35, 44, 0.03), transparent);
+  z-index: 0;
 }
 
 a {
@@ -62,17 +73,66 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 28px;
-  background: rgba(243, 234, 217, 0.86);
+  padding: 20px 28px 14px;
+  background: rgba(243, 234, 217, 0.9);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
 
+.topbar::before,
+.site-foot::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--red) 0 7px,
+    #fffaf1 7px 11px,
+    var(--teal) 11px 18px,
+    #fffaf1 18px 22px
+  );
+}
+
+.topbar::before {
+  top: 0;
+}
+
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.08em;
+}
+
+.brand-stamp {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 34px;
+  background: var(--red);
+  color: var(--sheet);
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 2px;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--red-deep) 70%, black);
+}
+
+.brand-stamp::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed rgba(255, 250, 241, 0.45);
+  pointer-events: none;
+}
+
+.brand-text {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  letter-spacing: 0.08em;
 }
 
 .brand strong {
@@ -80,7 +140,7 @@ select {
   font-size: 22px;
 }
 
-.brand span {
+.brand-text span {
   color: var(--muted);
   font-size: 12px;
 }
@@ -134,9 +194,27 @@ select {
 }
 
 .wrap {
+  position: relative;
+  z-index: 1;
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
   padding: 28px 0 80px;
+}
+
+@media (min-width: 1100px) {
+  .wrap::before {
+    content: "";
+    position: absolute;
+    left: -36px;
+    top: 48px;
+    bottom: 96px;
+    width: 16px;
+    background:
+      radial-gradient(circle, color-mix(in srgb, var(--paper) 70%, #cbb896) 5px, transparent 5.5px) 50% 0 / 16px 32px;
+    border-left: 1px dashed var(--line);
+    opacity: 0.85;
+    pointer-events: none;
+  }
 }
 
 .hero {
@@ -155,6 +233,16 @@ select {
   letter-spacing: 0.18em;
   font-size: 12px;
   text-transform: uppercase;
+}
+
+.kicker::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--red);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--red) 35%, transparent);
+  transform: rotate(-18deg);
 }
 
 .hero h1 {
@@ -181,15 +269,26 @@ select {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18px;
-  transform: rotate(3deg);
+  transform: rotate(2deg);
 }
 
 .panel {
+  position: relative;
   background: var(--sheet);
   border: 1px solid var(--line);
   border-radius: 22px;
   box-shadow: var(--shadow);
   padding: 22px;
+}
+
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 16px;
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 .section-title {
@@ -204,6 +303,16 @@ select {
   font-family: var(--serif);
   font-size: 28px;
   margin: 0;
+}
+
+.section-title h2::after {
+  content: "";
+  display: block;
+  width: 76px;
+  height: 10px;
+  margin-top: 8px;
+  background: radial-gradient(circle, var(--red) 1.6px, transparent 1.9px) 0 50% / 9px 10px;
+  opacity: 0.42;
 }
 
 .muted {
@@ -373,6 +482,7 @@ select {
 }
 
 .catalog-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -382,6 +492,25 @@ select {
   border: 1px solid var(--line);
   border-radius: 20px;
   box-shadow: 0 8px 20px rgba(48, 32, 18, 0.06);
+}
+
+.catalog-card::after {
+  content: "销";
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid color-mix(in srgb, var(--teal) 45%, transparent);
+  border-radius: 50%;
+  color: var(--teal);
+  font-size: 11px;
+  display: grid;
+  place-items: center;
+  transform: rotate(-18deg);
+  opacity: 0.28;
+  pointer-events: none;
+  font-family: var(--serif);
 }
 
 .catalog-card:hover {
@@ -492,10 +621,24 @@ select {
 }
 
 .card {
+  position: relative;
   background: var(--sheet);
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 18px;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    linear-gradient(135deg, transparent 50%, color-mix(in srgb, var(--gold) 80%, #8a6a3a) 50.5%) left top / 12px 12px no-repeat,
+    linear-gradient(-135deg, transparent 50%, color-mix(in srgb, var(--gold) 80%, #8a6a3a) 50.5%) right top / 12px 12px no-repeat,
+    linear-gradient(45deg, transparent 50%, color-mix(in srgb, var(--gold) 80%, #8a6a3a) 50.5%) left bottom / 12px 12px no-repeat,
+    linear-gradient(-45deg, transparent 50%, color-mix(in srgb, var(--gold) 80%, #8a6a3a) 50.5%) right bottom / 12px 12px no-repeat;
 }
 
 .home-cards {
@@ -600,6 +743,7 @@ a.card:hover {
 
 .auth-card {
   width: min(440px, 100%);
+  overflow: visible;
 }
 
 .form label {
@@ -639,6 +783,7 @@ a.card:hover {
 }
 
 .legal {
+  position: relative;
   max-width: 640px;
   margin: 0 auto;
   display: grid;
@@ -652,12 +797,20 @@ a.card:hover {
 }
 
 .site-foot {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 16px 40px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  padding: 22px 16px 36px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.site-foot::before {
+  top: 0;
 }
 
 .site-foot a:hover {
@@ -749,6 +902,22 @@ a.card:hover {
   color: var(--muted);
 }
 
+.empty::before {
+  content: "";
+  display: block;
+  width: 68px;
+  height: 90px;
+  margin: 0 auto 14px;
+  border-radius: 3px;
+  background:
+    radial-gradient(circle at 0 7px, transparent 5px, color-mix(in srgb, var(--muted) 35%, transparent) 5.5px, transparent 6px) left / 10px 14px repeat-y,
+    radial-gradient(circle at 100% 7px, transparent 5px, color-mix(in srgb, var(--muted) 35%, transparent) 5.5px, transparent 6px) right / 10px 14px repeat-y,
+    radial-gradient(circle at 7px 0, transparent 5px, color-mix(in srgb, var(--muted) 35%, transparent) 5.5px, transparent 6px) top / 14px 10px repeat-x,
+    radial-gradient(circle at 7px 100%, transparent 5px, color-mix(in srgb, var(--muted) 35%, transparent) 5.5px, transparent 6px) bottom / 14px 10px repeat-x;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--muted) 28%, transparent);
+  opacity: 0.7;
+}
+
 .detail {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -772,20 +941,401 @@ a.card:hover {
   color: var(--muted);
 }
 
+.album-add {
+  max-width: none;
+  margin-bottom: 8px;
+}
+
+.album-add-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.album-add-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.photo-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.photo-preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  background: #f4ead8;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.photo-hint {
+  margin: 8px 0 0;
+}
+
 @media (max-width: 860px) {
   .hero,
   .post,
   .match,
-  .detail {
+  .detail,
+  .album-add-grid {
     grid-template-columns: 1fr;
   }
   .hero-stamps {
     transform: none;
   }
   .topbar {
-    padding: 12px 16px;
+    padding: 18px 16px 12px;
   }
   .wrap {
     width: min(1120px, calc(100% - 24px));
+  }
+  .hero-mail {
+    margin-top: 8px;
+  }
+  .wax-seal {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+    right: 8px;
+    bottom: -10px;
+  }
+  .wm-postmark,
+  .deco-stamp,
+  .deco-loupe,
+  .deco-tongs {
+    display: none;
+  }
+}
+
+/* Philatelic ornaments */
+
+.site-ornaments {
+  pointer-events: none;
+}
+
+.wm-postmark {
+  position: fixed;
+  width: 250px;
+  height: 250px;
+  color: var(--teal);
+  opacity: 0.13;
+  z-index: 0;
+  font-family: var(--serif);
+}
+
+.wm-tr {
+  top: 72px;
+  right: -28px;
+  transform: rotate(16deg);
+}
+
+.wm-bl {
+  bottom: 36px;
+  left: -36px;
+  transform: rotate(-22deg);
+  color: var(--red);
+  opacity: 0.1;
+}
+
+.deco-stamp {
+  --ink-color: var(--red);
+  position: fixed;
+  width: 92px;
+  aspect-ratio: 3 / 4;
+  background: var(--sheet);
+  border-radius: 3px;
+  box-shadow: 0 8px 18px rgba(48, 32, 18, 0.1);
+  opacity: 0.22;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.deco-stamp::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 0 7px, transparent 5px, var(--sheet) 5.5px) left / 10px 14px repeat-y,
+    radial-gradient(circle at 100% 7px, transparent 5px, var(--sheet) 5.5px) right / 10px 14px repeat-y,
+    radial-gradient(circle at 7px 0, transparent 5px, var(--sheet) 5.5px) top / 14px 10px repeat-x,
+    radial-gradient(circle at 7px 100%, transparent 5px, var(--sheet) 5.5px) bottom / 14px 10px repeat-x;
+}
+
+.deco-stamp-face {
+  position: absolute;
+  inset: 9px;
+  border: 1px solid color-mix(in srgb, var(--ink-color) 55%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ink-color) 18%, #fffaf1), #fffaf1 62%);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+
+.deco-stamp-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.deco-stamp-mark {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-size: 28px;
+  color: var(--ink-color);
+}
+
+.deco-stamp-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.fs-a {
+  top: 120px;
+  left: 18px;
+  transform: rotate(-14deg);
+}
+
+.fs-b {
+  top: 42%;
+  right: 22px;
+  transform: rotate(11deg);
+}
+
+.fs-c {
+  bottom: 88px;
+  right: 8%;
+  transform: rotate(-8deg);
+}
+
+.deco-loupe,
+.deco-tongs {
+  position: fixed;
+  color: color-mix(in srgb, var(--ink) 55%, var(--gold));
+  opacity: 0.12;
+  z-index: 0;
+}
+
+.deco-loupe {
+  width: 110px;
+  right: 6%;
+  bottom: 22%;
+  transform: rotate(18deg);
+}
+
+.deco-tongs {
+  width: 42px;
+  height: 96px;
+  left: 4%;
+  bottom: 18%;
+  transform: rotate(-28deg);
+}
+
+.hero-mail {
+  position: relative;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold) 16%, var(--sheet)) 0 22px, var(--sheet) 22px);
+  border: 1px solid var(--line);
+  border-radius: 6px 6px 20px 20px;
+  padding: 28px 20px 26px;
+  box-shadow: var(--shadow);
+}
+
+.hero-mail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 22px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold) 28%, var(--sheet)), transparent),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 10px,
+      color-mix(in srgb, var(--red) 10%, transparent) 10px 14px,
+      transparent 14px 18px,
+      color-mix(in srgb, var(--teal) 10%, transparent) 18px 22px
+    );
+  border-bottom: 1px dashed var(--line);
+  border-radius: 6px 6px 0 0;
+  pointer-events: none;
+}
+
+.mail-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  min-height: 22px;
+}
+
+.mail-chip {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  padding: 4px 8px;
+  border: 1.5px solid currentColor;
+  background: color-mix(in srgb, var(--sheet) 82%, white);
+  font-weight: 700;
+}
+
+.mail-chip.air {
+  color: var(--teal);
+  transform: rotate(-6deg);
+}
+
+.mail-chip.reg {
+  color: var(--red);
+  transform: rotate(5deg);
+}
+
+.wax-seal {
+  position: absolute;
+  right: -10px;
+  bottom: -14px;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #f6ead4;
+  font-family: var(--serif);
+  font-size: 28px;
+  background:
+    radial-gradient(circle at 34% 28%, #e15a4f, #8f1720 58%, #5e0e14 100%);
+  box-shadow:
+    0 10px 18px rgba(143, 23, 32, 0.32),
+    inset 0 2px 3px rgba(255, 255, 255, 0.28),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.18);
+  transform: rotate(12deg);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.wax-seal::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px dashed rgba(246, 234, 212, 0.5);
+  border-radius: 50%;
+}
+
+.wax-seal-sm {
+  width: 52px;
+  height: 52px;
+  font-size: 20px;
+  top: -16px;
+  right: -12px;
+  bottom: auto;
+  transform: rotate(16deg);
+}
+
+.card-glyph {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 10px;
+  color: var(--teal);
+}
+
+.home-cards .card {
+  padding-top: 20px;
+}
+
+.catalog-card {
+  padding-bottom: 40px;
+}
+
+.auth-card,
+.panel.legal {
+  padding-top: 28px;
+}
+
+.letter-panel {
+  padding-top: 18px;
+}
+
+.composer-labels {
+  margin: 0 0 12px;
+}
+
+.album-leaf {
+  position: relative;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 18px 22px;
+  box-shadow: 0 8px 20px rgba(48, 32, 18, 0.06);
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--red) 18%, transparent) 0 2px, transparent 2px),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 31px,
+      color-mix(in srgb, var(--line) 70%, transparent) 31px 32px
+    );
+  background-origin: padding-box;
+}
+
+.album-leaf + .album-leaf {
+  margin-top: 28px;
+}
+
+.album-leaf .section-title {
+  margin-top: 0;
+}
+
+.stat {
+  position: relative;
+  background: var(--sheet);
+  box-shadow: 0 6px 14px rgba(48, 32, 18, 0.05);
+}
+
+.stat::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 8px;
+  height: 6px;
+  background: radial-gradient(circle, var(--paper) 2.2px, transparent 2.5px) 0 50% / 8px 6px;
+  opacity: 0.8;
+}
+
+.foot-cancel {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 2px solid color-mix(in srgb, var(--teal) 55%, transparent);
+  border-radius: 50%;
+  color: var(--teal);
+  font-family: var(--serif);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  transform: rotate(-18deg);
+  opacity: 0.7;
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent);
+}
+
+.guide-entry,
+.catalog-card,
+.match {
+  position: relative;
+}
+
+@media (max-width: 1400px) {
+  .fs-a,
+  .fs-b,
+  .fs-c,
+  .deco-loupe,
+  .deco-tongs {
+    display: none;
   }
 }
