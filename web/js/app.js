@@ -89,7 +89,7 @@ function layout(inner, active) {
         <span>YOULIN</span>
       </a>
       <nav class="nav">
-        <a href="/explore" data-link class="${active === "explore" ? "active" : ""}">票图</a>
+        <a href="/explore" data-link class="${active === "explore" ? "active" : ""}">目录</a>
         <a href="/feed" data-link class="${active === "feed" ? "active" : ""}">晒票</a>
         <a href="/album" data-link class="${active === "album" ? "active" : ""}">我的邮册</a>
         <a href="/swap" data-link class="${active === "swap" ? "active" : ""}">交换</a>
@@ -121,7 +121,7 @@ function landingView() {
         </p>
         <div class="hero-actions">
           <a class="btn" href="${state.user ? "/feed" : "/register"}" data-link>${state.user ? "去晒票" : "开始集邮"}</a>
-          <a class="ghost" href="/explore" data-link>先逛票图</a>
+          <a class="ghost" href="/explore" data-link>查目录</a>
         </div>
       </div>
       <div class="hero-stamps" id="hero-stamps"></div>
@@ -361,51 +361,144 @@ async function renderAdmin(root) {
   });
 }
 
+const CATALOG_GROUPS = [
+  {
+    title: "国内用户",
+    intro: "查中国邮票请用官方志号。下面三处分别覆盖在线图典、志号检索和权威纸质目录说明。",
+    items: [
+      {
+        name: "StampDIR 邮趣目录图典",
+        href: "http://www.stampdir.cn/",
+        host: "stampdir.cn",
+        blurb: "两岸四地邮票、版张、首日封、纪念戳和邮资封片的在线图典，可按志号、系列和主题筛选。",
+      },
+      {
+        name: "大众邮藏 · 志号检索",
+        href: "https://postalwiki.cn/index.php/site/fcsearch?smode=1&svalue=0",
+        host: "postalwiki.cn",
+        blurb: "中文 Wiki 式目录，按纪、特、J、T、编年等志号检索新中国邮票。",
+      },
+      {
+        name: "集邮总公司 · 目录书目说明",
+        href: "https://www.chinapost.com.cn/html1/report/181428/6409-1.htm",
+        host: "chinapost.com.cn",
+        blurb: "《中华人民共和国邮票目录》由人民邮电出版社出版，资料以发行通告为准。这是书目介绍页，没有完整免费在线版。",
+      },
+    ],
+  },
+  {
+    title: "世界票对照",
+    intro: "对照各国邮票、交叉编号时用社区目录。邮邻优先推荐 Colnect。",
+    items: [
+      {
+        name: "Colnect",
+        href: "https://colnect.com/zh/stamps",
+        host: "colnect.com",
+        preferred: true,
+        blurb: "免费浏览的世界邮票库，可按国家、年份检索，并常附 Scott、Michel、Gibbons、Yvert 交叉编号。",
+      },
+      {
+        name: "StampWorld",
+        href: "https://www.stampworld.com/zh/",
+        host: "stampworld.com",
+        blurb: "体量很大的社区图库与收藏夹，适合快速对照票图。",
+      },
+    ],
+  },
+  {
+    title: "官方真伪",
+    intro: "万国邮联对成员国正式发行邮票的登记，用来核验是否为官方票，不是行情目录。",
+    items: [
+      {
+        name: "WNS 万国邮联编号系统",
+        href: "https://www.wnsstamps.post/",
+        host: "wnsstamps.post",
+        warning: true,
+        blurb: "收录 2002 年起各成员国正式发行的邮票。中国约在 2004 年后不再完整登记，近年中国新邮不能只靠这里核验。",
+      },
+    ],
+  },
+  {
+    title: "四大商业目录",
+    intro: "国际集邮界常用的编号权威。编号体系受版权保护，且多为付费墙。邮邻只放官网入口，不镜像编号，也不报行情。",
+    items: [
+      {
+        name: "Scott Catalogue",
+        href: "https://www.amosadvantage.com/product/scott-catalogues-of-postage-stamps",
+        host: "amosadvantage.com",
+        paid: true,
+        blurb: "美国与世界六卷标准目录。编号受版权保护，完整内容需订阅。",
+      },
+      {
+        name: "Michel（MICHEL）",
+        href: "https://shop.briefmarken.de/en/michel-online/database-michel-online-standard",
+        host: "briefmarken.de",
+        paid: true,
+        blurb: "德国、欧洲与世界目录，齿孔、水印和变体较细。在线数据库需订阅。",
+      },
+      {
+        name: "Stanley Gibbons",
+        href: "https://legacy.stanleygibbons.com/publishing/digital-catalogues",
+        host: "stanleygibbons.com",
+        paid: true,
+        blurb: "英国与英联邦的常用目录，也有世界卷。数字目录需登录购买。",
+      },
+      {
+        name: "Yvert et Tellier",
+        href: "https://www.yvert.com/",
+        host: "yvert.com",
+        paid: true,
+        blurb: "法国、法属殖民地与世界目录。在线图书馆为付费订阅。",
+      },
+    ],
+  },
+];
+
+function catalogTag(item) {
+  if (item.preferred) return `<span class="catalog-tag preferred">首选</span>`;
+  if (item.warning) return `<span class="catalog-tag warning">中国近年不完整</span>`;
+  if (item.paid) return `<span class="catalog-tag paid">官网入口 · 付费</span>`;
+  return "";
+}
+
+function catalogCard(item) {
+  return `
+    <a class="catalog-card" href="${escapeHtml(item.href)}" target="_blank" rel="noopener noreferrer">
+      <div class="catalog-card-head">
+        <h3>${escapeHtml(item.name)}</h3>
+        ${catalogTag(item)}
+      </div>
+      <p>${escapeHtml(item.blurb)}</p>
+      <span class="catalog-host">${escapeHtml(item.host)} ↗</span>
+    </a>
+  `;
+}
+
 async function renderExplore(root) {
-  const params = new URLSearchParams(location.search);
-  const currentTheme = params.get("theme") || "";
-  const q = params.get("q") || "";
-  const [themes, stamps] = await Promise.all([
-    api("/stamps/themes"),
-    api(`/stamps?theme=${encodeURIComponent(currentTheme)}&q=${encodeURIComponent(q)}`),
-  ]);
   root.innerHTML = layout(
     `
       <div class="section-title">
         <div>
-          <h2>票图</h2>
-          <p class="muted">晚清民初的中国邮票原图。当代新邮因版权不收录原图，只做目录会另说。</p>
+          <h2>邮票目录</h2>
+          <p class="muted">邮邻不自建世界目录，也不收录当代票图。查票、对照志号请用下面这些公开或商业目录。</p>
         </div>
       </div>
-      <input class="search" id="search" value="${escapeHtml(q)}" placeholder="搜票名、志号、专题…" />
-      <div class="filters" id="themes">
-        <button class="chip ${currentTheme ? "" : "active"}" data-theme="">全部</button>
-        ${themes
-          .map(
-            (theme) =>
-              `<button class="chip ${theme === currentTheme ? "active" : ""}" data-theme="${escapeHtml(theme)}">${escapeHtml(theme)}</button>`
-          )
-          .join("")}
+      <div class="catalog-page">
+        ${CATALOG_GROUPS.map(
+          (group) => `
+            <section class="catalog-group">
+              <div class="catalog-group-head">
+                <h3>${escapeHtml(group.title)}</h3>
+                <p class="muted">${escapeHtml(group.intro)}</p>
+              </div>
+              <div class="catalog-links">${group.items.map(catalogCard).join("")}</div>
+            </section>
+          `
+        ).join("")}
       </div>
-      <div class="grid" id="stamps">${stamps.map((s) => stampCard(s)).join("")}</div>
     `,
     "explore"
   );
-  qs("#search").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      const next = new URLSearchParams(location.search);
-      next.set("q", event.target.value.trim());
-      navigate(`/explore?${next.toString()}`);
-    }
-  });
-  qs("#themes").addEventListener("click", (event) => {
-    const btn = event.target.closest("[data-theme]");
-    if (!btn) return;
-    const next = new URLSearchParams(location.search);
-    if (btn.dataset.theme) next.set("theme", btn.dataset.theme);
-    else next.delete("theme");
-    navigate(`/explore?${next.toString()}`);
-  });
 }
 
 async function renderFeed(root) {
@@ -495,7 +588,7 @@ async function renderAlbum(root) {
         ${
           groups[key].length
             ? groups[key].map((item) => stampCard(item.stamp, `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${escapeHtml(item.note)}</div>`)).join("")
-            : `<div class="empty">空着。去票图里挑一枚。</div>`
+            : `<div class="empty">空着。可先去目录对照志号。</div>`
         }
       </div>
     </section>
@@ -507,7 +600,7 @@ async function renderAlbum(root) {
           <h2>我的邮册</h2>
           <p class="muted">${escapeHtml(state.user.display_name)} · ${escapeHtml(state.user.city || "未填写城市")}</p>
         </div>
-        <a class="ghost" href="/explore" data-link>去加票</a>
+        <a class="ghost" href="/explore" data-link>查目录</a>
       </div>
       <div class="stats">
         <div class="stat"><b>${groups.own.length}</b><span class="muted">在册</span></div>
