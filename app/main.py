@@ -27,6 +27,9 @@ def startup() -> None:
     db: Session = SessionLocal()
     try:
         seed_if_empty(db)
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
 

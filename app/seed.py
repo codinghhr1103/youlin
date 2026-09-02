@@ -710,6 +710,13 @@ def _seed_demo_people(db: Session) -> None:
     for username, catalog_no, status, note in collections:
         stamp = _stamp_by_catalog(db, catalog_no)
         user = users[username]
+        already = (
+            db.query(CollectionItem)
+            .filter(CollectionItem.user_id == user.id, CollectionItem.stamp_id == stamp.id)
+            .first()
+        )
+        if already:
+            continue
         photo_path = ""
         if status in {"own", "swap"}:
             photo_path = copy_catalog_image_as_photo(user.id, stamp.image_path)
@@ -846,31 +853,6 @@ def _seed_comments(db: Session) -> None:
         db.add(PostComment(post_id=posts[index % len(posts)].id, user_id=author.id, body=body))
 
 
-def _ensure_demo_match(db: Session) -> None:
-    fangcun = db.query(User).filter(User.username == "fangcun").first()
-    stamp = db.query(Stamp).filter(Stamp.catalog_no == "CQ-BT").first()
-    if not fangcun or not stamp:
-        return
-    exists = (
-        db.query(CollectionItem)
-        .filter(CollectionItem.user_id == fangcun.id, CollectionItem.stamp_id == stamp.id)
-        .first()
-    )
-    if exists:
-        return
-    db.add(
-        CollectionItem(
-            user_id=fangcun.id,
-            stamp_id=stamp.id,
-            catalog_no=stamp.catalog_no,
-            name=stamp.name,
-            status="want",
-            note="想换一枚重庆书信馆",
-            photo_path="",
-        )
-    )
-
-
 def seed_if_empty(db: Session) -> None:
     ensure_stamp_columns()
     ensure_user_columns()
@@ -882,7 +864,6 @@ def seed_if_empty(db: Session) -> None:
     _backfill_demo_photos(db)
     _backfill_item_labels(db)
     _backfill_post_photos(db)
-    _ensure_demo_match(db)
     _seed_comments(db)
     ensure_admin(db)
     db.commit()
