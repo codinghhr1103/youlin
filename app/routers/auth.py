@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import create_token, get_current_user, hash_password, verify_password
 from app.db import get_db
 from app.models import User
-from app.schemas import LoginIn, ProfileUpdate, RegisterIn, TokenOut, UserOut
+from app.schemas import LoginIn, ProfileUpdate, RegisterIn, TokenOut, UserPrivate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -69,7 +69,7 @@ def register(payload: RegisterIn, db: Annotated[Session, Depends(get_db)]):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return TokenOut(token=create_token(user.id), user=UserOut.model_validate(user))
+    return TokenOut(token=create_token(user.id), user=UserPrivate.model_validate(user))
 
 
 @router.post("/login", response_model=TokenOut)
@@ -79,15 +79,15 @@ def login(payload: LoginIn, db: Annotated[Session, Depends(get_db)]):
         raise HTTPException(status_code=400, detail="账号或密码不对")
     if user.banned:
         raise HTTPException(status_code=403, detail="账号已被停用，请联系管理员")
-    return TokenOut(token=create_token(user.id), user=UserOut.model_validate(user))
+    return TokenOut(token=create_token(user.id), user=UserPrivate.model_validate(user))
 
 
-@router.get("/me", response_model=UserOut)
+@router.get("/me", response_model=UserPrivate)
 def me(user: Annotated[User, Depends(get_current_user)]):
     return user
 
 
-@router.patch("/me", response_model=UserOut)
+@router.patch("/me", response_model=UserPrivate)
 def update_me(
     payload: ProfileUpdate,
     user: Annotated[User, Depends(get_current_user)],

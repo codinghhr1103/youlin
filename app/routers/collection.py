@@ -46,13 +46,14 @@ def upsert_collection(
     )
     if item:
         item.status = payload.status
-        item.note = payload.note
+        if payload.note is not None:
+            item.note = payload.note.strip()
     else:
         item = CollectionItem(
             user_id=user.id,
             stamp_id=payload.stamp_id,
             status=payload.status,
-            note=payload.note,
+            note=(payload.note or "").strip(),
         )
         db.add(item)
     db.commit()

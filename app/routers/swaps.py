@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import get_current_user
 from app.db import get_db
 from app.models import CollectionItem, Stamp, Swap, User
-from app.schemas import StampOut, SwapIn, SwapOut, UserOut
+from app.schemas import StampOut, SwapIn, SwapOut, UserPublic
 
 router = APIRouter(prefix="/swaps", tags=["swaps"])
 
@@ -21,8 +21,8 @@ def serialize_swap(swap: Swap) -> SwapOut:
         status=swap.status,
         message=swap.message,
         created_at=swap.created_at,
-        proposer=UserOut.model_validate(swap.proposer),
-        partner=UserOut.model_validate(swap.partner),
+        proposer=UserPublic.model_validate(swap.proposer),
+        partner=UserPublic.model_validate(swap.partner),
         offer_stamp=StampOut.model_validate(swap.offer_stamp),
         request_stamp=StampOut.model_validate(swap.request_stamp),
     )
@@ -47,7 +47,7 @@ def matches(
             continue
         results.append(
             {
-                "user": UserOut.model_validate(other).model_dump(mode="json"),
+                "user": UserPublic.model_validate(other).model_dump(mode="json"),
                 "mutual": bool(you_offer and they_offer),
                 "you_offer": [StampOut.model_validate(stamp_map[i]).model_dump(mode="json") for i in you_offer],
                 "they_offer": [StampOut.model_validate(stamp_map[i]).model_dump(mode="json") for i in they_offer],

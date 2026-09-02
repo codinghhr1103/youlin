@@ -116,6 +116,10 @@ function layout(inner, active) {
       </div>
     </header>
     <main class="wrap">${inner}</main>
+    <footer class="site-foot">
+      <a href="/terms" data-link>用户协议</a>
+      ${authed ? `<span>·</span><a href="/settings" data-link>编辑资料</a>` : ""}
+    </footer>
   `;
 }
 
@@ -297,13 +301,72 @@ function termsView() {
   return `
     <article class="panel legal">
       <div class="kicker">YOULIN</div>
-      <h2 style="font-family:var(--serif)">用户协议与隐私政策（摘要）</h2>
-      <p>邮邻是个人非经营性集邮社区原型，不收费、不担保交易、不提供支付。</p>
-      <p>注册时收集的用户名、称呼、城市、简介，以及你选择的邮箱或手机号，仅用于登录、账号识别和站内通知预留。目前不会向你的邮箱或手机发送验证码。</p>
-      <p>你可以随时申请更正资料或停用账号。管理员有权处理违法信息和停用违规账号。</p>
-      <p class="tiny"><a href="/register" data-link>返回注册</a></p>
+      <h2 style="font-family:var(--serif)">用户协议与隐私政策</h2>
+      <p>邮邻（Youlin）是个人非经营性集邮社区原型：整理数字邮册、晒票、按缺品和复品匹配交换。不收费、不做交易、不报行情、不评估票价，也不提供支付或物流担保。</p>
+      <h3>账号与联系方式</h3>
+      <p>注册需用户名，以及邮箱或中国大陆手机号之一，用于登录和账号识别。站点目前不会发送短信或邮件验证码。邮箱和手机号只对本人和管理员可见，不会出现在晒票、邮友主页或交换匹配里。</p>
+      <p>你可以在「编辑资料」中更正称呼、城市和简介。若需停用账号，请联系管理员。</p>
+      <h3>你发布的内容</h3>
+      <p>晒票、邮册备注和交换留言由你负责。请勿发布违法信息、他人隐私，或未经授权的当代邮票原图。管理员有权处理违规内容并停用账号。</p>
+      <h3>票图与目录</h3>
+      <p>站内示例票图来自维基共享，且为 1931 年以前发行的中国邮票，版权状态为公有领域或自由许可。当代新邮原图不收录。查票请使用目录页列出的外部目录；邮邻不镜像商业编号体系。</p>
+      <h3>交换</h3>
+      <p>交换是站内约定，双方自行联系寄递、验票。邮邻不经手邮票或款项，不对品相、真伪或纠纷承担责任。</p>
+      <h3>开源</h3>
+      <p>本站代码以 MIT License 发布，详见仓库中的 LICENSE 文件。</p>
+      <p class="tiny"><a href="/register" data-link>返回注册</a> · <a href="/" data-link>回首页</a></p>
     </article>
   `;
+}
+
+async function renderSettings(root) {
+  requireAuth();
+  const me = await api("/auth/me");
+  saveSession(state.token, { ...state.user, ...me });
+  root.innerHTML = layout(
+    `
+      <div class="auth-layout">
+        <form class="panel form auth-card" id="settings-form" onsubmit="return false">
+          <div class="kicker">资料</div>
+          <h2 style="font-family:var(--serif);margin:8px 0 0">编辑资料</h2>
+          <p class="muted">称呼、城市和简介会显示在主页上。联系方式只有你和管理员看得见。</p>
+          <label>称呼
+            <input name="display_name" maxlength="20" value="${escapeHtml(me.display_name)}" required />
+          </label>
+          <label>城市
+            <input name="city" maxlength="40" value="${escapeHtml(me.city || "")}" placeholder="例如杭州" />
+          </label>
+          <label>集邮简介
+            <textarea name="bio" maxlength="240" placeholder="你在集什么？">${escapeHtml(me.bio || "")}</textarea>
+          </label>
+          <p class="tiny">登录账号：@${escapeHtml(me.username)} · ${escapeHtml(me.email || me.phone || "未填联系方式")}</p>
+          <button class="btn" type="submit">保存</button>
+          <p class="flash" id="settings-error"></p>
+          <p class="tiny"><a href="/u/${encodeURIComponent(me.username)}" data-link>查看主页</a></p>
+        </form>
+      </div>
+    `,
+    "album"
+  );
+  qs("#settings-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const error = qs("#settings-error");
+    try {
+      const user = await api("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          display_name: form.get("display_name"),
+          city: form.get("city") || "",
+          bio: form.get("bio") || "",
+        }),
+      });
+      saveSession(state.token, { ...state.user, ...user });
+      navigate(`/u/${encodeURIComponent(user.username)}`);
+    } catch (err) {
+      error.textContent = err.message;
+    }
+  });
 }
 
 async function renderAdmin(root) {
@@ -577,18 +640,14 @@ async function renderGuide(root) {
 }
 
 async function renderFeed(root) {
-  requireAuth();
-  const [posts, mine] = await Promise.all([api("/posts"), api("/me/collection")]);
-  const owned = mine.filter((item) => item.status === "own" || item.status === "swap");
-  root.innerHTML = layout(
-    `
-      <div class="section-title">
-        <div>
-          <h2>晒票</h2>
-          <p class="muted">一枚票可以只是纸，也可以是一段日子。</p>
-        </div>
-      </div>
-      <form class="panel composer" id="composer">
+  const posts = await api("/posts");
+  let owned = [];
+  if (state.user) {
+    const mine = await api("/me/collection");
+    owned = mine.filter((item) => item.status === "own" || item.status === "swap");
+  }
+  const composer = state.user
+    ? `<form class="panel composer" id="composer">
         <textarea name="body" placeholder="今天想讲哪一枚票？" required></textarea>
         <div class="row">
           <select name="stamp_id">
@@ -603,7 +662,17 @@ async function renderFeed(root) {
           <button class="btn" type="submit">贴上</button>
         </div>
         <p class="flash" id="composer-error"></p>
-      </form>
+      </form>`
+    : `<div class="panel"><p class="muted" style="margin:0">未登录也可以看大家晒的票。<a href="/login" data-link>登录</a> 后才能发帖和点喜欢。</p></div>`;
+  root.innerHTML = layout(
+    `
+      <div class="section-title">
+        <div>
+          <h2>晒票</h2>
+          <p class="muted">一枚票可以只是纸，也可以是一段日子。</p>
+        </div>
+      </div>
+      ${composer}
       <div class="feed" style="margin-top:18px">
         ${
           posts.length
@@ -623,29 +692,32 @@ async function renderFeed(root) {
             </article>`
                 )
                 .join("")
-            : `<div class="empty">还没有人晒票。做第一个吧。</div>`
+            : `<div class="empty">还没有人晒票。${state.user ? "做第一个吧。" : "登录后做第一个吧。"}</div>`
         }
       </div>
     `,
     "feed"
   );
-  qs("#composer").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    const stampId = form.get("stamp_id");
-    try {
-      await api("/posts", {
-        method: "POST",
-        body: JSON.stringify({
-          body: form.get("body"),
-          stamp_id: stampId ? Number(stampId) : null,
-        }),
-      });
-      await render();
-    } catch (err) {
-      qs("#composer-error").textContent = err.message;
-    }
-  });
+  const composerForm = qs("#composer");
+  if (composerForm) {
+    composerForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const stampId = form.get("stamp_id");
+      try {
+        await api("/posts", {
+          method: "POST",
+          body: JSON.stringify({
+            body: form.get("body"),
+            stamp_id: stampId ? Number(stampId) : null,
+          }),
+        });
+        await render();
+      } catch (err) {
+        qs("#composer-error").textContent = err.message;
+      }
+    });
+  }
 }
 
 async function renderAlbum(root) {
@@ -675,7 +747,10 @@ async function renderAlbum(root) {
           <h2>我的邮册</h2>
           <p class="muted">${escapeHtml(state.user.display_name)} · ${escapeHtml(state.user.city || "未填写城市")}</p>
         </div>
-        <a class="ghost" href="/explore" data-link>查目录</a>
+        <div class="row">
+          <a class="ghost" href="/settings" data-link>编辑资料</a>
+          <a class="ghost" href="/explore" data-link>查目录</a>
+        </div>
       </div>
       <div class="stats">
         <div class="stat"><b>${groups.own.length}</b><span class="muted">在册</span></div>
@@ -775,11 +850,14 @@ function statusLabel(status) {
   return { pending: "待回应", accepted: "已同意，等待互寄", declined: "已婉拒", completed: "已完成" }[status] || status;
 }
 
+const NOTE_CHIPS = ["新票", "旧票", "信销", "盖销", "全品", "有折痕", "缺齿", "揭薄"];
+
 async function renderStamp(root, id) {
   const stamp = await api(`/stamps/${id}`);
   let mine = [];
   if (state.user) mine = await api("/me/collection");
   const current = mine.find((item) => item.stamp.id === stamp.id);
+  const noteValue = current?.note || "";
   root.innerHTML = layout(
     `
       <div class="detail">
@@ -796,25 +874,47 @@ async function renderStamp(root, id) {
           }
           ${
             state.user
-              ? `<div class="actions">
+              ? `<div class="note-box">
+                   <label>邮册备注
+                     <textarea id="stamp-note" maxlength="120" placeholder="例如：新票 · 全品，右边纸还在">${escapeHtml(noteValue)}</textarea>
+                   </label>
+                   <div class="filters" id="note-chips">
+                     ${NOTE_CHIPS.map((chip) => `<button type="button" class="chip" data-chip="${escapeHtml(chip)}">${escapeHtml(chip)}</button>`).join("")}
+                   </div>
+                 </div>
+                 <div class="actions">
                    <button class="btn collect" data-status="own">收入邮册</button>
                    <button class="ghost collect" data-status="want">我想要</button>
                    <button class="ghost collect" data-status="swap">标为可换</button>
+                   ${current ? `<button class="ghost collect" data-status="${current.status}">保存备注</button>` : ""}
                    ${current ? `<button class="ghost" id="remove">移出邮册</button>` : ""}
                  </div>
                  <p class="tiny" id="stamp-status">${current ? `当前：${{ own: "在册", want: "想要", swap: "可换" }[current.status]}${current.note ? " · " + current.note : ""}` : "还没放进邮册"}</p>`
-              : `<p class="tiny">登录后就可以把这枚票放进自己的册子。</p>`
+              : `<p class="tiny">登录后就可以把这枚票放进自己的册子，并写下新/旧和品相。</p>`
           }
         </div>
       </div>
     `,
     "explore"
   );
+  const noteInput = qs("#stamp-note");
+  const chips = qs("#note-chips");
+  if (chips && noteInput) {
+    chips.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-chip]");
+      if (!btn) return;
+      const token = btn.dataset.chip;
+      const cur = noteInput.value.trim();
+      if (cur.includes(token)) return;
+      noteInput.value = cur ? `${cur} · ${token}` : token;
+    });
+  }
+  const collectNote = () => (noteInput ? noteInput.value.trim() : "");
   root.querySelectorAll(".collect").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await api("/me/collection", {
         method: "POST",
-        body: JSON.stringify({ stamp_id: stamp.id, status: btn.dataset.status }),
+        body: JSON.stringify({ stamp_id: stamp.id, status: btn.dataset.status, note: collectNote() }),
       });
       await render();
     });
@@ -840,6 +940,11 @@ async function renderProfile(root, username) {
           <h2>${escapeHtml(user.display_name)}</h2>
           <p class="muted">${escapeHtml(user.city || "未填写城市")} · ${escapeHtml(user.bio || "这个人还没写介绍")}</p>
         </div>
+        ${
+          state.user?.username === user.username
+            ? `<a class="ghost" href="/settings" data-link>编辑资料</a>`
+            : ""
+        }
       </div>
       <div class="grid">
         ${items.map((item) => stampCard(item.stamp, `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${item.status === "want" ? "想要" : item.status === "swap" ? "可换" : "在册"}</div>`)).join("")}
@@ -869,6 +974,10 @@ function bindGlobal(root) {
   });
   root.querySelectorAll(".like-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
+      if (!state.user) {
+        navigate("/login");
+        return;
+      }
       const id = btn.closest("[data-post]").dataset.post;
       await api(`/posts/${id}/like`, { method: "POST" });
       await render();
@@ -904,6 +1013,7 @@ async function render() {
     else if (path === "/login") await renderAuth(root, "login");
     else if (path === "/register") await renderAuth(root, "register");
     else if (path === "/terms") root.innerHTML = layout(termsView(), "");
+    else if (path === "/settings") await renderSettings(root);
     else if (path === "/admin") await renderAdmin(root);
     else if (path === "/explore") await renderExplore(root);
     else if (path === "/guide") await renderGuide(root);

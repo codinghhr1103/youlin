@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import get_current_user, get_optional_user
 from app.db import get_db
 from app.models import Post, PostLike, Stamp, User
-from app.schemas import PostIn, PostOut, StampOut, UserOut
+from app.schemas import PostIn, PostOut, StampOut, UserPublic
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -21,7 +21,7 @@ def serialize_post(post: Post, me: User | None) -> PostOut:
         created_at=post.created_at,
         like_count=len(post.likes),
         liked=liked,
-        author=UserOut.model_validate(post.author),
+        author=UserPublic.model_validate(post.author),
         stamp=StampOut.model_validate(post.stamp) if post.stamp else None,
     )
 

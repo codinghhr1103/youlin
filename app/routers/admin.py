@@ -6,12 +6,12 @@ from sqlalchemy.orm import Session
 from app.auth import get_admin_user
 from app.db import get_db
 from app.models import User
-from app.schemas import UserOut
+from app.schemas import UserPrivate
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@router.get("/users", response_model=list[UserOut])
+@router.get("/users", response_model=list[UserPrivate])
 def list_users(
     _: Annotated[User, Depends(get_admin_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -19,7 +19,7 @@ def list_users(
     return db.query(User).order_by(User.created_at.asc()).all()
 
 
-@router.post("/users/{user_id}/ban", response_model=UserOut)
+@router.post("/users/{user_id}/ban", response_model=UserPrivate)
 def ban_user(
     user_id: int,
     admin: Annotated[User, Depends(get_admin_user)],
@@ -38,7 +38,7 @@ def ban_user(
     return user
 
 
-@router.post("/users/{user_id}/unban", response_model=UserOut)
+@router.post("/users/{user_id}/unban", response_model=UserPrivate)
 def unban_user(
     user_id: int,
     _: Annotated[User, Depends(get_admin_user)],

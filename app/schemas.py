@@ -26,24 +26,31 @@ class LoginIn(BaseModel):
     password: str
 
 
-class UserOut(BaseModel):
+class UserPublic(BaseModel):
+    """公开资料：不含邮箱、手机号。"""
+
     id: int
     username: str
     display_name: str
     city: str
     bio: str
-    email: str | None = None
-    phone: str | None = None
-    role: str = "user"
-    banned: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
+class UserPrivate(UserPublic):
+    """本人或管理员可见，含联系方式。"""
+
+    email: str | None = None
+    phone: str | None = None
+    role: str = "user"
+    banned: bool = False
+
+
 class TokenOut(BaseModel):
     token: str
-    user: UserOut
+    user: UserPrivate
 
 
 class StampOut(BaseModel):
@@ -68,7 +75,7 @@ class StampOut(BaseModel):
 class CollectionIn(BaseModel):
     stamp_id: int
     status: str = Field(pattern="^(own|want|swap)$")
-    note: str = ""
+    note: str | None = Field(default=None, max_length=120)
 
 
 class CollectionOut(BaseModel):
@@ -91,7 +98,7 @@ class PostOut(BaseModel):
     created_at: datetime
     like_count: int
     liked: bool
-    author: UserOut
+    author: UserPublic
     stamp: StampOut | None
 
 
@@ -107,13 +114,13 @@ class SwapOut(BaseModel):
     status: str
     message: str
     created_at: datetime
-    proposer: UserOut
-    partner: UserOut
+    proposer: UserPublic
+    partner: UserPublic
     offer_stamp: StampOut
     request_stamp: StampOut
 
 
 class ProfileUpdate(BaseModel):
-    display_name: str | None = None
-    city: str | None = None
-    bio: str | None = None
+    display_name: str | None = Field(default=None, min_length=1, max_length=20)
+    city: str | None = Field(default=None, max_length=40)
+    bio: str | None = Field(default=None, max_length=240)

@@ -460,12 +460,15 @@ def ensure_user_columns() -> None:
 
 
 def ensure_admin(db: Session) -> None:
+    password = settings.ADMIN_PASSWORD
+    if not password:
+        return
     user = db.query(User).filter(User.username == settings.ADMIN_USERNAME).first()
     if user:
         user.role = "admin"
         user.banned = False
         user.email = settings.ADMIN_EMAIL
-        user.password_hash = hash_password(settings.ADMIN_PASSWORD)
+        user.password_hash = hash_password(password)
         if not user.display_name:
             user.display_name = "邮邻管理员"
         return
@@ -475,7 +478,7 @@ def ensure_admin(db: Session) -> None:
         User(
             username=settings.ADMIN_USERNAME,
             display_name="邮邻管理员",
-            password_hash=hash_password(settings.ADMIN_PASSWORD),
+            password_hash=hash_password(password),
             email=email,
             role="admin",
             city="杭州",

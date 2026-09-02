@@ -5,17 +5,17 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import User
-from app.schemas import UserOut
+from app.schemas import UserPublic
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("", response_model=list[UserOut])
+@router.get("", response_model=list[UserPublic])
 def list_users(db: Annotated[Session, Depends(get_db)]):
     return db.query(User).order_by(User.created_at.asc()).all()
 
 
-@router.get("/{username}", response_model=UserOut)
+@router.get("/{username}", response_model=UserPublic)
 def get_user(username: str, db: Annotated[Session, Depends(get_db)]):
     user = db.query(User).filter(User.username == username).first()
     if not user:

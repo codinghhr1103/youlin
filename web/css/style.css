@@ -645,6 +645,48 @@ a.card:hover {
   gap: 12px;
 }
 
+.legal h3 {
+  font-family: var(--serif);
+  font-size: 18px;
+  margin: 16px 0 4px;
+}
+
+.site-foot {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px 40px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.site-foot a:hover {
+  color: var(--ink);
+}
+
+.note-box {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 8px;
+}
+
+.note-box label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.note-box textarea {
+  width: 100%;
+  min-height: 76px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
 .table-wrap {
   overflow: auto;
   background: var(--sheet);
