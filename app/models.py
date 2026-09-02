@@ -50,13 +50,15 @@ class CollectionItem(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    stamp_id: Mapped[int] = mapped_column(ForeignKey("stamps.id"), index=True)
+    stamp_id: Mapped[int | None] = mapped_column(ForeignKey("stamps.id"), index=True, nullable=True)
+    catalog_no: Mapped[str] = mapped_column(String(32), default="")
+    name: Mapped[str] = mapped_column(String(80), default="")
     status: Mapped[str] = mapped_column(String(12), default="own")  # own / want / swap
     note: Mapped[str] = mapped_column(String(120), default="")
     photo_path: Mapped[str] = mapped_column(String(200), default="")
 
     user: Mapped[User] = relationship(back_populates="items")
-    stamp: Mapped[Stamp] = relationship()
+    stamp: Mapped[Stamp | None] = relationship()
 
 
 class Post(Base):
@@ -65,12 +67,20 @@ class Post(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     stamp_id: Mapped[int | None] = mapped_column(ForeignKey("stamps.id"), nullable=True)
+    item_id: Mapped[int | None] = mapped_column(ForeignKey("collection_items.id"), nullable=True)
+    catalog_no: Mapped[str] = mapped_column(String(32), default="")
+    name: Mapped[str] = mapped_column(String(80), default="")
+    photo_path: Mapped[str] = mapped_column(String(200), default="")
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     author: Mapped[User] = relationship(back_populates="posts")
     stamp: Mapped[Stamp | None] = relationship()
+    item: Mapped[CollectionItem | None] = relationship()
     likes: Mapped[list["PostLike"]] = relationship(back_populates="post", cascade="all, delete-orphan")
+    comments: Mapped[list["PostComment"]] = relationship(
+        back_populates="post", cascade="all, delete-orphan", order_by="PostComment.created_at"
+    )
 
 
 class PostLike(Base):
@@ -84,19 +94,36 @@ class PostLike(Base):
     post: Mapped[Post] = relationship(back_populates="likes")
 
 
+class PostComment(Base):
+    __tablename__ = "post_comments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    body: Mapped[str] = mapped_column(String(240))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    post: Mapped[Post] = relationship(back_populates="comments")
+    author: Mapped[User] = relationship()
+
+
 class Swap(Base):
     __tablename__ = "swaps"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     proposer_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     partner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    offer_stamp_id: Mapped[int] = mapped_column(ForeignKey("stamps.id"))
-    request_stamp_id: Mapped[int] = mapped_column(ForeignKey("stamps.id"))
+    offer_item_id: Mapped[int | None] = mapped_column(ForeignKey("collection_items.id"), nullable=True)
+    request_item_id: Mapped[int | None] = mapped_column(ForeignKey("collection_items.id"), nullable=True)
+    offer_stamp_id: Mapped[int | None] = mapped_column(ForeignKey("stamps.id"), nullable=True)
+    request_stamp_id: Mapped[int | None] = mapped_column(ForeignKey("stamps.id"), nullable=True)
     message: Mapped[str] = mapped_column(String(200), default="")
     status: Mapped[str] = mapped_column(String(16), default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     proposer: Mapped[User] = relationship(foreign_keys=[proposer_id])
     partner: Mapped[User] = relationship(foreign_keys=[partner_id])
-    offer_stamp: Mapped[Stamp] = relationship(foreign_keys=[offer_stamp_id])
-    request_stamp: Mapped[Stamp] = relationship(foreign_keys=[request_stamp_id])
+    offer_item: Mapped[CollectionItem | None] = relationship(foreign_keys=[offer_item_id])
+    request_item: Mapped[CollectionItem | None] = relationship(foreign_keys=[request_item_id])
+    offer_stamp: Mapped[Stamp | None] = relationship(foreign_keys=[offer_stamp_id])
+    request_stamp: Mapped[Stamp | None] = relationship(foreign_keys=[request_stamp_id])

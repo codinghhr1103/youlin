@@ -71,18 +71,34 @@ function formatTime(iso) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function itemAsStamp(item) {
+  const stamp = item.stamp || {};
+  return {
+    id: item.stamp_id || stamp.id || "",
+    name: item.name || stamp.name || "未命名",
+    catalog_no: item.catalog_no || stamp.catalog_no || "",
+    year: stamp.year || "",
+    theme: stamp.theme || "",
+    mark: stamp.mark || String(item.name || "票").slice(0, 1),
+    color: stamp.color || "#2c5e52",
+    face_value: stamp.face_value || "",
+    image_path: "",
+  };
+}
+
 function stampCard(stamp, extra = "", photoPath) {
   const src = photoPath !== undefined ? photoPath : stamp.image_path;
+  const stampAttr = stamp.id ? ` data-stamp="${stamp.id}"` : "";
   const photo = src
     ? `<img class="stamp-photo" src="${escapeHtml(src)}" alt="${escapeHtml(stamp.name)}" />`
-    : `<div class="stamp-mark">${escapeHtml(stamp.mark)}</div>`;
+    : `<div class="stamp-mark">${escapeHtml(stamp.mark || "票")}</div>`;
   return `
-    <article class="stamp" style="--ink-color:${stamp.color}" data-stamp="${stamp.id}">
+    <article class="stamp" style="--ink-color:${stamp.color || "#2c5e52"}"${stampAttr}>
       <div class="stamp-face ${src ? "has-photo" : ""}">
-        <div class="stamp-meta"><span>${escapeHtml(stamp.catalog_no)}</span><span>${stamp.year}</span></div>
+        <div class="stamp-meta"><span>${escapeHtml(stamp.catalog_no || "")}</span><span>${stamp.year || ""}</span></div>
         ${photo}
-        <div class="stamp-name">${escapeHtml(stamp.name)}</div>
-        <div class="stamp-value">${escapeHtml(stamp.face_value)} · ${escapeHtml(stamp.theme)}</div>
+        <div class="stamp-name">${escapeHtml(stamp.name || "未命名")}</div>
+        <div class="stamp-value">${escapeHtml(stamp.face_value || "实拍")} · ${escapeHtml(stamp.theme || "自藏")}</div>
       </div>
       <div class="postmark">邮邻</div>
       ${extra}
@@ -95,7 +111,25 @@ function albumCard(item, caption) {
   const extra = text
     ? `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${escapeHtml(text)}</div>`
     : "";
-  return stampCard(item.stamp, extra, item.photo_path || "");
+  return stampCard(itemAsStamp(item), extra, item.photo_path || "");
+}
+
+function pieceCard(piece) {
+  if (!piece) return "";
+  return stampCard(
+    {
+      id: piece.stamp_id || "",
+      name: piece.name,
+      catalog_no: piece.catalog_no,
+      year: "",
+      theme: "",
+      mark: String(piece.name || "票").slice(0, 1),
+      color: "#b4232c",
+      face_value: "",
+    },
+    piece.note ? `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${escapeHtml(piece.note)}</div>` : "",
+    piece.photo_path || ""
+  );
 }
 
 function bindPhotoPreview(input, preview) {
@@ -232,78 +266,93 @@ function landingView() {
   return `
     <section class="hero">
       <div>
-        <div class="kicker">方寸之间 · 遇见同好</div>
-        <h1>给年轻集邮者的<br/>收藏与社交园地</h1>
+        <div class="kicker">使用说明</div>
+        <h1>看实拍、讲票、<br/>找同城换复品</h1>
         <p class="lede">
-          不是行情站，也不做拍卖行。邮邻从海关大龙讲起：整理数字邮册、晒出一枚票的故事，
-          再按「我有复品 / 我想要」找到可以交换的人。
+          邮邻不是目录站，也不做买卖和行情。查志号请用外部目录；在这里只做三件事：
+          拍下自己的票、写下它的故事、和同城或同好用复品换缺品。
         </p>
         <div class="hero-actions">
-          <a class="btn" href="${state.user ? "/feed" : "/register"}" data-link>${state.user ? "去晒票" : "开始集邮"}</a>
-          <a class="ghost" href="/guide" data-link>集邮入门</a>
-          <a class="ghost" href="/explore" data-link>查目录</a>
+          <a class="btn" href="${state.user ? "/album" : "/register"}" data-link>${state.user ? "去拍一张" : "注册后开始"}</a>
+          <a class="ghost" href="/feed" data-link>先看晒票</a>
+          <a class="ghost" href="/guide" data-link>集邮名词</a>
         </div>
       </div>
       <div class="hero-mail">
         <div class="mail-labels">
-          <span class="mail-chip air">航空 PAR AVION</span>
-          <span class="mail-chip reg">挂号 REGISTERED</span>
+          <span class="mail-chip air">实拍</span>
+          <span class="mail-chip reg">同城</span>
         </div>
         <div class="hero-stamps" id="hero-stamps"></div>
+        <p class="tiny" style="margin:12px 0 0">信封里是公有领域示例票。你的邮册和晒票只用自己拍的图。</p>
         <div class="wax-seal"><span>邻</span></div>
       </div>
     </section>
     <section class="section-title">
       <div>
-        <h2>这里不谈涨跌</h2>
-        <p class="muted">记录、欣赏、交换。把邮票从货架上拿回册子里。</p>
+        <h2>怎么用</h2>
+        <p class="muted">按这个顺序走一遍，站点里的功能就齐了。</p>
+      </div>
+    </section>
+    <ol class="how-steps">
+      <li class="card how-step">
+        <span class="how-num">1</span>
+        <div>
+          <h3>写上城市，注册一个号</h3>
+          <p class="muted">城市会用来把同城的交换排在前面。邮箱或手机号用来登录；只有交换谈起来之后，对方才看得到。</p>
+        </div>
+      </li>
+      <li class="card how-step">
+        <span class="how-num">2</span>
+        <div>
+          <h3>把票拍进邮册，自己写志号和票名</h3>
+          <p class="muted">在册和可换必须上传实拍，不能用目录扫描件。站内那二十枚只是示例，编年、生肖、纪特都可以自己填志号。缺的票可以先记「想要」，先不配图。</p>
+        </div>
+      </li>
+      <li class="card how-step">
+        <span class="how-num">3</span>
+        <div>
+          <h3>晒票：图在先，话在后</h3>
+          <p class="muted">动态必须带实拍。可以写齿孔、背胶、为什么留下它。别人能在下面留言问品相，也可以点喜欢。</p>
+        </div>
+      </li>
+      <li class="card how-step">
+        <span class="how-num">4</span>
+        <div>
+          <h3>交换页先看同城</h3>
+          <p class="muted">系统按「你可换的志号 × 对方想要的志号」匹配，同城排在最前。点开能看见双方实拍；同意之后才能看到对方的邮箱或手机，自行约定面交或互寄。</p>
+        </div>
+      </li>
+      <li class="card how-step">
+        <span class="how-num">5</span>
+        <div>
+          <h3>查票和名词不在邮邻里完成</h3>
+          <p class="muted">对照志号去 <a href="/explore" data-link>目录</a> 列出的 StampDIR、Colnect 等站点。背胶、齿孔、老纪特这些词，看 <a href="/guide" data-link>集邮入门</a>。</p>
+        </div>
+      </li>
+    </ol>
+    <section class="section-title">
+      <div>
+        <h2>这里不做什么</h2>
+        <p class="muted">不估价、不拍卖、不经手票和钱。交换是邻里约定，真伪和品相由你们自己看实拍、自己验。</p>
       </div>
     </section>
     <div class="grid home-cards">
-      <article class="card">
-        <div class="card-glyph" aria-hidden="true">
-          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6">
-            <rect x="7" y="6" width="20" height="28" rx="1.5"/>
-            <rect x="12" y="6" width="20" height="28" rx="1.5"/>
-            <rect x="16" y="12" width="10" height="13" rx="0.6"/>
-            <circle cx="28" cy="11" r="3.4"/>
-          </svg>
-        </div>
-        <h3>数字邮册</h3>
-        <p class="muted">在册和可换只收你自己拍的实物图。缺的票可以先记下来。</p>
-      </article>
-      <article class="card">
-        <div class="card-glyph" aria-hidden="true">
-          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6">
-            <rect x="8" y="5" width="16" height="22" rx="1"/>
-            <circle cx="26" cy="26" r="7.5"/>
-            <path d="M20 13h4M12 18h8" stroke-linecap="round"/>
-          </svg>
-        </div>
+      <a class="card" href="/album" data-link>
+        <h3>我的邮册</h3>
+        <p class="muted">拍实物、写志号，标成在册、可换或想要。</p>
+      </a>
+      <a class="card" href="/feed" data-link>
         <h3>晒票</h3>
-        <p class="muted">写一枚票为什么留下来。齿孔、实寄、小学时的窗口。</p>
-      </article>
-      <article class="card">
-        <div class="card-glyph" aria-hidden="true">
-          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6">
-            <rect x="5" y="10" width="14" height="18" rx="1" transform="rotate(-12 12 19)"/>
-            <rect x="21" y="10" width="14" height="18" rx="1" transform="rotate(10 28 19)"/>
-            <path d="M13 32c6 4 10 4 16 0" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <h3>可信交换</h3>
-        <p class="muted">系统匹配缺品和复品，双方确认后再互换。不做担保交易。</p>
-      </article>
-      <a class="card" href="/guide" data-link>
-        <div class="card-glyph" aria-hidden="true">
-          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6">
-            <rect x="6" y="8" width="14" height="18" rx="1"/>
-            <circle cx="26" cy="20" r="7"/>
-            <path d="M31 25l6 6" stroke-width="2.4" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <h3>集邮入门</h3>
-        <p class="muted">背胶、齿孔、大版小版、老纪特和编年，先认这些词。</p>
+        <p class="muted">发实拍、讲故事，在帖下把品相问清楚。</p>
+      </a>
+      <a class="card" href="/swap" data-link>
+        <h3>交换</h3>
+        <p class="muted">同城优先，看见实拍和联系方式再约定。</p>
+      </a>
+      <a class="card" href="/explore" data-link>
+        <h3>查目录</h3>
+        <p class="muted">世界票库不自建，外链到公开和商业目录。</p>
       </a>
     </div>
   `;
@@ -448,15 +497,15 @@ function termsView() {
       <h2 style="font-family:var(--serif)">用户协议与隐私政策</h2>
       <p>邮邻（Youlin）是个人非经营性集邮社区原型：整理数字邮册、晒票、按缺品和复品匹配交换。不收费、不做交易、不报行情、不评估票价，也不提供支付或物流担保。</p>
       <h3>账号与联系方式</h3>
-      <p>注册需用户名，以及邮箱或中国大陆手机号之一，用于登录和账号识别。站点目前不会发送短信或邮件验证码。邮箱和手机号只对本人和管理员可见，不会出现在晒票、邮友主页或交换匹配里。</p>
-      <p>你可以在「编辑资料」中更正称呼、城市和简介。若需停用账号，请联系管理员。</p>
+      <p>注册需用户名，以及邮箱或中国大陆手机号之一，用于登录和账号识别。站点目前不会发送短信或邮件验证码。邮箱和手机号默认只对本人和管理员可见，不会出现在晒票或邮友主页。双方同意一笔交换后，为了约定面交或互寄，对方可以看到你的联系方式。</p>
+      <p>你可以在「编辑资料」中更正称呼、城市、简介和联系方式。城市会用于把同城交换排在前面。若需停用账号，请联系管理员。</p>
       <h3>你发布的内容</h3>
-      <p>晒票、邮册备注、实拍图和交换留言由你负责。请勿发布违法信息、他人隐私，或未经授权的当代邮票原图。管理员有权处理违规内容并停用账号。</p>
+      <p>晒票、帖下留言、邮册备注、实拍图和交换留言由你负责。请勿发布违法信息、他人隐私，或未经授权的当代邮票原图。管理员有权处理违规内容并停用账号。</p>
       <h3>票图与目录</h3>
       <p>站内示例票图来自维基共享，且为 1931 年以前发行的中国邮票，版权状态为公有领域或自由许可。当代新邮原图不收录。查票请使用目录页列出的外部目录；邮邻不镜像商业编号体系。</p>
-      <p>你的邮册不使用目录扫描件。收入「在册」或标成「可换」时，必须上传自己拍摄的实物图；「想要」可以先不配图。</p>
+      <p>你的邮册和晒票不使用目录扫描件。收入「在册」、标成「可换」或发晒票时，必须上传自己拍摄的实物图，并自己填写志号与票名。「想要」可以先不配图。</p>
       <h3>交换</h3>
-      <p>交换是站内约定，双方自行联系寄递、验票。邮邻不经手邮票或款项，不对品相、真伪或纠纷承担责任。</p>
+      <p>交换是站内约定，双方自行联系寄递或面交、验票。同意交换后可见对方联系方式。邮邻不经手邮票或款项，不对品相、真伪或纠纷承担责任。</p>
       <h3>开源</h3>
       <p>本站代码以 MIT License 发布，详见仓库中的 LICENSE 文件。</p>
       <p class="tiny"><a href="/register" data-link>返回注册</a> · <a href="/" data-link>回首页</a></p>
@@ -475,7 +524,7 @@ async function renderSettings(root) {
           <div class="wax-seal wax-seal-sm"><span>邻</span></div>
           <div class="kicker">资料</div>
           <h2 style="font-family:var(--serif);margin:8px 0 0">编辑资料</h2>
-          <p class="muted">称呼、城市和简介会显示在主页上。联系方式只有你和管理员看得见。</p>
+          <p class="muted">称呼、城市和简介会显示在主页上。城市用于同城交换排序。联系方式默认只有你和管理员看得见，对方同意交换后才能看到。</p>
           <label>称呼
             <input name="display_name" maxlength="20" value="${escapeHtml(me.display_name)}" required />
           </label>
@@ -803,31 +852,44 @@ async function renderFeed(root) {
   const composer = state.user
     ? `<form class="panel composer letter-panel" id="composer">
         <div class="mail-labels composer-labels">
-          <span class="mail-chip air">航空</span>
-          <span class="mail-chip reg">实寄</span>
+          <span class="mail-chip air">实拍</span>
+          <span class="mail-chip reg">讲票</span>
         </div>
-        <textarea name="body" placeholder="今天想讲哪一枚票？" required></textarea>
+        <label class="photo-picker">实拍图
+          <input name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/*" />
+          <img class="photo-preview" alt="预览" hidden />
+        </label>
+        <textarea name="body" placeholder="这枚票为什么留下来？齿孔、背胶、或只是那天的光。" required></textarea>
         <div class="row">
-          <select name="stamp_id">
-            <option value="">不附票</option>
+          <label style="flex:1">票名
+            <input name="name" maxlength="80" placeholder="例如海关大龙 壹分银" />
+          </label>
+          <label style="flex:1">志号
+            <input name="catalog_no" maxlength="32" placeholder="例如纪1、2024-1" />
+          </label>
+        </div>
+        <div class="row">
+          <select name="item_id">
+            <option value="">不从邮册带入</option>
             ${owned
               .map(
                 (item) =>
-                  `<option value="${item.stamp.id}">${escapeHtml(item.stamp.name)} · ${escapeHtml(item.stamp.catalog_no)}</option>`
+                  `<option value="${item.id}" data-name="${escapeHtml(item.name)}" data-catalog="${escapeHtml(item.catalog_no)}">${escapeHtml(item.name)} · ${escapeHtml(item.catalog_no)}</option>`
               )
               .join("")}
           </select>
           <button class="btn" type="submit">贴上</button>
         </div>
+        <p class="tiny">必须带实拍。可从邮册选一枚带入志号，也可以自己写。</p>
         <p class="flash" id="composer-error"></p>
       </form>`
-    : `<div class="panel"><p class="muted" style="margin:0">未登录也可以看大家晒的票。<a href="/login" data-link>登录</a> 后才能发帖和点喜欢。</p></div>`;
+    : `<div class="panel"><p class="muted" style="margin:0">未登录也可以看实拍和留言。<a href="/login" data-link>登录</a> 后才能发帖、留言和点喜欢。</p></div>`;
   root.innerHTML = layout(
     `
       <div class="section-title">
         <div>
           <h2>晒票</h2>
-          <p class="muted">一枚票可以只是纸，也可以是一段日子。</p>
+          <p class="muted">先看见你手里那一张，再听它的故事。</p>
         </div>
       </div>
       ${composer}
@@ -835,22 +897,52 @@ async function renderFeed(root) {
         ${
           posts.length
             ? posts
-                .map(
-                  (post) => `
+                .map((post) => {
+                  const cardStamp = post.stamp || {
+                    id: "",
+                    name: post.name || "未命名",
+                    catalog_no: post.catalog_no || "",
+                    year: "",
+                    theme: "",
+                    mark: String(post.name || "票").slice(0, 1),
+                    color: "#2c5e52",
+                    face_value: "",
+                  };
+                  return `
             <article class="card post" data-post="${post.id}">
-              ${post.stamp ? stampCard(post.stamp, "", post.photo_path || "") : `<div></div>`}
+              ${stampCard(cardStamp, "", post.photo_path || "")}
               <div class="post-body">
                 <div class="tiny"><a href="/u/${encodeURIComponent(post.author.username)}" data-link>${escapeHtml(post.author.display_name)}</a> · ${formatTime(post.created_at)} · ${escapeHtml(post.author.city || "未知城市")}</div>
                 <p>${escapeHtml(post.body)}</p>
                 <div class="row">
                   <button class="ghost like-btn">${post.liked ? "已喜欢" : "喜欢"} · ${post.like_count}</button>
-                  ${post.stamp ? `<a class="ghost" href="/stamps/${post.stamp.id}" data-link>看这枚票</a>` : ""}
+                  ${post.stamp ? `<a class="ghost" href="/stamps/${post.stamp.id}" data-link>看示例票</a>` : ""}
                 </div>
               </div>
-            </article>`
-                )
+              <div class="comments">
+                ${
+                  (post.comments || [])
+                    .map(
+                      (comment) => `
+                    <p class="comment"><a href="/u/${encodeURIComponent(comment.author.username)}" data-link>${escapeHtml(comment.author.display_name)}</a>
+                    <span>${escapeHtml(comment.body)}</span>
+                    <span class="tiny">${formatTime(comment.created_at)}</span></p>`
+                    )
+                    .join("") || `<p class="tiny">还没有留言。</p>`
+                }
+                ${
+                  state.user
+                    ? `<form class="comment-form" data-post="${post.id}">
+                        <input name="body" maxlength="240" placeholder="问品相、齿孔，或说想换" required />
+                        <button class="ghost" type="submit">留言</button>
+                      </form>`
+                    : ""
+                }
+              </div>
+            </article>`;
+                })
                 .join("")
-            : `<div class="empty">还没有人晒票。${state.user ? "做第一个吧。" : "登录后做第一个吧。"}</div>`
+            : `<div class="empty">还没有人晒票。${state.user ? "拍一张做第一个吧。" : "登录后做第一个吧。"}</div>`
         }
       </div>
     `,
@@ -858,24 +950,42 @@ async function renderFeed(root) {
   );
   const composerForm = qs("#composer");
   if (composerForm) {
+    bindPhotoPreview(qs("input[name=photo]", composerForm), qs(".photo-preview", composerForm));
+    const itemSelect = composerForm.querySelector("[name=item_id]");
+    if (itemSelect) {
+      itemSelect.addEventListener("change", () => {
+        const opt = itemSelect.selectedOptions[0];
+        if (!opt || !opt.value) return;
+        if (opt.dataset.name) composerForm.querySelector("[name=name]").value = opt.dataset.name;
+        if (opt.dataset.catalog) composerForm.querySelector("[name=catalog_no]").value = opt.dataset.catalog;
+      });
+    }
     composerForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const form = new FormData(event.target);
-      const stampId = form.get("stamp_id");
       try {
-        await api("/posts", {
-          method: "POST",
-          body: JSON.stringify({
-            body: form.get("body"),
-            stamp_id: stampId ? Number(stampId) : null,
-          }),
-        });
+        await api("/posts", { method: "POST", body: new FormData(composerForm) });
         await render();
       } catch (err) {
         qs("#composer-error").textContent = err.message;
       }
     });
   }
+  root.querySelectorAll(".comment-form").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      try {
+        await api(`/posts/${form.dataset.post}/comments`, {
+          method: "POST",
+          body: JSON.stringify({ body: data.get("body") }),
+        });
+        await render();
+      } catch (err) {
+        form.querySelector("input").setCustomValidity(err.message);
+        form.querySelector("input").reportValidity();
+      }
+    });
+  });
 }
 
 async function renderAlbum(root) {
@@ -922,13 +1032,19 @@ async function renderAlbum(root) {
             <img class="photo-preview" alt="预览" hidden />
           </label>
           <div class="album-add-fields">
-            <label>是哪一枚
-              <select name="stamp_id" required>
-                <option value="" disabled selected>对照志号选择</option>
+            <label>票名
+              <input name="name" maxlength="80" placeholder="例如编年 甲辰年" required />
+            </label>
+            <label>志号
+              <input name="catalog_no" maxlength="32" placeholder="例如 2024-1 或 纪1" required />
+            </label>
+            <label>对照站内示例（选填）
+              <select name="stamp_id" id="album-stamp">
+                <option value="">自己写志号，不对照示例</option>
                 ${stamps
                   .map(
                     (stamp) =>
-                      `<option value="${stamp.id}">${escapeHtml(stamp.name)} · ${escapeHtml(stamp.catalog_no)}</option>`
+                      `<option value="${stamp.id}" data-name="${escapeHtml(stamp.name)}" data-catalog="${escapeHtml(stamp.catalog_no)}">${escapeHtml(stamp.name)} · ${escapeHtml(stamp.catalog_no)}</option>`
                   )
                   .join("")}
               </select>
@@ -962,6 +1078,15 @@ async function renderAlbum(root) {
   const addForm = qs("#album-add");
   bindOwnedPhotoRule(addForm);
   bindPhotoPreview(qs("input[name=photo]", addForm), qs(".photo-preview", addForm));
+  const stampSelect = qs("#album-stamp");
+  if (stampSelect) {
+    stampSelect.addEventListener("change", () => {
+      const opt = stampSelect.selectedOptions[0];
+      if (!opt || !opt.value) return;
+      if (opt.dataset.name) addForm.querySelector("[name=name]").value = opt.dataset.name;
+      if (opt.dataset.catalog) addForm.querySelector("[name=catalog_no]").value = opt.dataset.catalog;
+    });
+  }
   addForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const error = qs("#album-error");
@@ -987,7 +1112,7 @@ async function renderSwap(root) {
       <div class="section-title">
         <div>
           <h2>交换</h2>
-          <p class="muted">系统只做匹配，不经手票，也不经手钱。</p>
+          <p class="muted">同城排在前面。看见实拍再约，同意之后才交换联系方式。邮邻不经手票，也不经手钱。</p>
         </div>
       </div>
       <div class="feed">
@@ -1002,21 +1127,25 @@ async function renderSwap(root) {
                       <div>
                         <a href="/u/${encodeURIComponent(row.user.username)}" data-link><strong>${escapeHtml(row.user.display_name)}</strong></a>
                         <div class="tiny">${escapeHtml(row.user.city)} · ${escapeHtml(row.user.bio)}</div>
+                        ${row.same_city ? `<span class="badge">同城</span>` : `<span class="tiny">外地</span>`}
                         ${row.mutual ? `<span class="badge">双向可换</span>` : `<span class="tiny">单向匹配</span>`}
                       </div>
-                      <div class="tiny">
-                        你可提供：${row.you_offer.map((s) => s.name).join("、") || "暂无"}<br/>
-                        对方可提供：${row.they_offer.map((s) => s.name).join("、") || "暂无"}
+                      <div class="swap-shots">
+                        ${offer ? pieceCard(offer) : `<div class="tiny">你还没有对方想要的可换票</div>`}
+                        ${request ? pieceCard(request) : `<div class="tiny">对方还没有你想要的可换票</div>`}
                       </div>
                       ${
                         offer && request
-                          ? `<button class="btn propose" data-partner="${row.user.id}" data-offer="${offer.id}" data-request="${request.id}">发起交换</button>`
-                          : `<span class="tiny">还缺一边的票</span>`
+                          ? `<div class="swap-propose">
+                               <input class="swap-msg" maxlength="200" placeholder="给对方留一句话，例如可面交或互寄" />
+                               <button class="btn propose" data-partner="${row.user.id}" data-offer="${offer.id}" data-request="${request.id}">发起交换</button>
+                             </div>`
+                          : `<span class="tiny">还缺一边的可换实拍</span>`
                       }
                     </article>`;
                 })
                 .join("")
-            : `<div class="empty">还没有匹配。把复品标成「可换」，把缺的标成「想要」。</div>`
+            : `<div class="empty">还没有匹配。把复品标成「可换」，把缺的标成「想要」，志号要写对。</div>`
         }
       </div>
       <div class="section-title" style="margin-top:32px"><h2>进行中的交换</h2></div>
@@ -1024,12 +1153,24 @@ async function renderSwap(root) {
         ${
           swaps.length
             ? swaps
-                .map(
-                  (swap) => `
-            <article class="card">
-              <div class="tiny">${formatTime(swap.created_at)} · ${statusLabel(swap.status)}</div>
-              <p>${escapeHtml(swap.proposer.display_name)} 用「${escapeHtml(swap.offer_stamp.name)}」换 ${escapeHtml(swap.partner.display_name)} 的「${escapeHtml(swap.request_stamp.name)}」</p>
+                .map((swap) => {
+                  const contact = [swap.their_email, swap.their_phone].filter(Boolean).join(" · ");
+                  return `
+            <article class="card swap-card">
+              <div class="tiny">${formatTime(swap.created_at)} · ${statusLabel(swap.status)}${swap.same_city ? " · 同城" : ""}</div>
+              <p>${escapeHtml(swap.proposer.display_name)} 用「${escapeHtml(swap.offer.name)}」换 ${escapeHtml(swap.partner.display_name)} 的「${escapeHtml(swap.request.name)}」</p>
+              <div class="swap-shots">
+                ${pieceCard(swap.offer)}
+                ${pieceCard(swap.request)}
+              </div>
               ${swap.message ? `<p class="muted">${escapeHtml(swap.message)}</p>` : ""}
+              ${
+                contact
+                  ? `<p class="tiny">对方联系方式：${escapeHtml(contact)}</p>`
+                  : swap.status === "declined"
+                    ? `<p class="tiny">已婉拒，不再显示联系方式。</p>`
+                    : `<p class="tiny">对方同意后，才会看到联系方式，方便面交或互寄。</p>`
+              }
               <div class="row">
                 ${
                   swap.status === "pending" && swap.partner.username === state.user.username
@@ -1043,8 +1184,8 @@ async function renderSwap(root) {
                     : ""
                 }
               </div>
-            </article>`
-                )
+            </article>`;
+                })
                 .join("")
             : `<div class="empty">还没有交换请求。</div>`
         }
@@ -1065,7 +1206,7 @@ async function renderStamp(root, id) {
   const stamp = await api(`/stamps/${id}`);
   let mine = [];
   if (state.user) mine = await api("/me/collection");
-  const current = mine.find((item) => item.stamp.id === stamp.id);
+  const current = mine.find((item) => item.stamp_id === stamp.id || item.stamp?.id === stamp.id);
   const noteValue = current?.note || "";
   const detailCard = current?.photo_path ? stampCard(stamp, "", current.photo_path) : stampCard(stamp);
   root.innerHTML = layout(
@@ -1137,6 +1278,8 @@ async function renderStamp(root, id) {
       }
       const body = new FormData();
       body.append("stamp_id", String(stamp.id));
+      body.append("name", stamp.name);
+      body.append("catalog_no", stamp.catalog_no);
       body.append("status", status);
       body.append("note", collectNote());
       if (file) body.append("photo", file);
@@ -1151,7 +1294,7 @@ async function renderStamp(root, id) {
   const remove = qs("#remove");
   if (remove) {
     remove.addEventListener("click", async () => {
-      await api(`/me/collection/${stamp.id}`, { method: "DELETE" });
+      await api(`/me/collection/${current ? current.id : stamp.id}`, { method: "DELETE" });
       await render();
     });
   }
@@ -1203,6 +1346,7 @@ function bindGlobal(root) {
     });
   }
   root.querySelectorAll(".stamp[data-stamp]").forEach((node) => {
+    if (!node.dataset.stamp) return;
     node.addEventListener("click", () => navigate(`/stamps/${node.dataset.stamp}`));
   });
   root.querySelectorAll(".like-btn").forEach((btn) => {
@@ -1218,13 +1362,15 @@ function bindGlobal(root) {
   });
   root.querySelectorAll(".propose").forEach((btn) => {
     btn.addEventListener("click", async () => {
+      const box = btn.closest(".match");
+      const message = box && box.querySelector(".swap-msg") ? box.querySelector(".swap-msg").value.trim() : "";
       await api("/swaps", {
         method: "POST",
         body: JSON.stringify({
           partner_id: Number(btn.dataset.partner),
-          offer_stamp_id: Number(btn.dataset.offer),
-          request_stamp_id: Number(btn.dataset.request),
-          message: "想用复品换你的缺品，品相如晒票所示。",
+          offer_item_id: Number(btn.dataset.offer),
+          request_item_id: Number(btn.dataset.request),
+          message: message || "想用复品换你的缺品，品相如实拍所示。",
         }),
       });
       await render();

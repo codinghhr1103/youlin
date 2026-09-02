@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import hash_password
 from app.db import engine
-from app.models import CollectionItem, Post, PostLike, Stamp, Swap, User
+from app.models import CollectionItem, Post, PostComment, PostLike, Stamp, Swap, User
 from app import settings
 from app.uploads import copy_catalog_image_as_photo
 
@@ -460,14 +460,127 @@ def ensure_user_columns() -> None:
         conn.execute(text("UPDATE users SET banned = 0 WHERE banned IS NULL"))
 
 
-def ensure_collection_columns() -> None:
+def _pragma_notnull(table: str, column: str) -> bool | None:
+    with engine.connect() as conn:
+        rows = conn.execute(text(f"PRAGMA table_info({table})")).mappings().all()
+    for row in rows:
+        if row["name"] == column:
+            return bool(row["notnull"])
+    return None
+
+
+def _column_map(table: str) -> dict:
     inspector = inspect(engine)
-    if "collection_items" not in inspector.get_table_names():
+    if table not in inspector.get_table_names():
+        return {}
+    return {col["name"]: col for col in inspector.get_columns(table)}
+
+
+def ensure_collection_columns() -> None:
+    cols = _column_map("collection_items")
+    if not cols:
         return
-    cols = {col["name"] for col in inspector.get_columns("collection_items")}
-    if "photo_path" not in cols:
-        with engine.begin() as conn:
+    with engine.begin() as conn:
+        if "photo_path" not in cols:
             conn.execute(text("ALTER TABLE collection_items ADD COLUMN photo_path VARCHAR(200) DEFAULT ''"))
+        if "catalog_no" not in cols:
+            conn.execute(text("ALTER TABLE collection_items ADD COLUMN catalog_no VARCHAR(32) DEFAULT ''"))
+        if "name" not in cols:
+            conn.execute(text("ALTER TABLE collection_items ADD COLUMN name VARCHAR(80) DEFAULT ''"))
+    cols = _column_map("collection_items")
+    if _pragma_notnull("collection_items", "stamp_id"):
+        with engine.begin() as conn:
+            conn.execute(text(
+                """
+                CREATE TABLE collection_items_new (
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    stamp_id INTEGER,
+                    catalog_no VARCHAR(32) DEFAULT '',
+                    name VARCHAR(80) DEFAULT '',
+                    status VARCHAR(12) DEFAULT 'own',
+                    note VARCHAR(120) DEFAULT '',
+                    photo_path VARCHAR(200) DEFAULT '',
+                    CONSTRAINT uq_user_stamp UNIQUE (user_id, stamp_id),
+                    FOREIGN KEY(user_id) REFERENCES users(id),
+                    FOREIGN KEY(stamp_id) REFERENCES stamps(id)
+                )
+                """
+            ))
+            conn.execute(text(
+                """
+                INSERT INTO collection_items_new
+                    (id, user_id, stamp_id, catalog_no, name, status, note, photo_path)
+                SELECT id, user_id, stamp_id,
+                    COALESCE(catalog_no, ''), COALESCE(name, ''), status, note, COALESCE(photo_path, '')
+                FROM collection_items
+                """
+            ))
+            conn.execute(text("DROP TABLE collection_items"))
+            conn.execute(text("ALTER TABLE collection_items_new RENAME TO collection_items"))
+
+
+def ensure_post_columns() -> None:
+    cols = _column_map("posts")
+    if not cols:
+        return
+    additions = {
+        "item_id": "INTEGER",
+        "catalog_no": "VARCHAR(32) DEFAULT ''",
+        "name": "VARCHAR(80) DEFAULT ''",
+        "photo_path": "VARCHAR(200) DEFAULT ''",
+    }
+    with engine.begin() as conn:
+        for name, ddl in additions.items():
+            if name not in cols:
+                conn.execute(text(f"ALTER TABLE posts ADD COLUMN {name} {ddl}"))
+
+
+def ensure_swap_columns() -> None:
+    cols = _column_map("swaps")
+    if not cols:
+        return
+    with engine.begin() as conn:
+        if "offer_item_id" not in cols:
+            conn.execute(text("ALTER TABLE swaps ADD COLUMN offer_item_id INTEGER"))
+        if "request_item_id" not in cols:
+            conn.execute(text("ALTER TABLE swaps ADD COLUMN request_item_id INTEGER"))
+    if _pragma_notnull("swaps", "offer_stamp_id"):
+        with engine.begin() as conn:
+            conn.execute(text(
+                """
+                CREATE TABLE swaps_new (
+                    id INTEGER PRIMARY KEY,
+                    proposer_id INTEGER NOT NULL,
+                    partner_id INTEGER NOT NULL,
+                    offer_item_id INTEGER,
+                    request_item_id INTEGER,
+                    offer_stamp_id INTEGER,
+                    request_stamp_id INTEGER,
+                    message VARCHAR(200) DEFAULT '',
+                    status VARCHAR(16) DEFAULT 'pending',
+                    created_at DATETIME,
+                    FOREIGN KEY(proposer_id) REFERENCES users(id),
+                    FOREIGN KEY(partner_id) REFERENCES users(id),
+                    FOREIGN KEY(offer_item_id) REFERENCES collection_items(id),
+                    FOREIGN KEY(request_item_id) REFERENCES collection_items(id),
+                    FOREIGN KEY(offer_stamp_id) REFERENCES stamps(id),
+                    FOREIGN KEY(request_stamp_id) REFERENCES stamps(id)
+                )
+                """
+            ))
+            conn.execute(text(
+                """
+                INSERT INTO swaps_new
+                    (id, proposer_id, partner_id, offer_item_id, request_item_id,
+                     offer_stamp_id, request_stamp_id, message, status, created_at)
+                SELECT id, proposer_id, partner_id, offer_item_id, request_item_id,
+                       offer_stamp_id, request_stamp_id, message, status, created_at
+                FROM swaps
+                """
+            ))
+            conn.execute(text("DROP TABLE swaps"))
+            conn.execute(text("ALTER TABLE swaps_new RENAME TO swaps"))
 
 
 def ensure_admin(db: Session) -> None:
@@ -572,6 +685,7 @@ def _seed_demo_people(db: Session) -> None:
         ("fangcun", "QH-HYH-4", "want", "一直缺小肆分"),
         ("fangcun", "ROC-GH-3", "want", ""),
         ("fangcun", "QH-DL-5", "swap", "伍分银复品"),
+        ("fangcun", "CQ-BT", "want", "想换一枚重庆书信馆"),
         ("achuo", "CQ-BT", "swap", "重庆书信馆复品"),
         ("achuo", "YC-1", "own", "宜昌商埠"),
         ("achuo", "YC-3M", "own", ""),
@@ -603,6 +717,8 @@ def _seed_demo_people(db: Session) -> None:
             CollectionItem(
                 user_id=user.id,
                 stamp_id=stamp.id,
+                catalog_no=stamp.catalog_no,
+                name=stamp.name,
                 status=status,
                 note=note,
                 photo_path=photo_path,
@@ -642,10 +758,21 @@ def _seed_demo_people(db: Session) -> None:
         ),
     ]
     for username, catalog_no, body in posts:
+        user = users[username]
+        stamp = _stamp_by_catalog(db, catalog_no)
+        item = (
+            db.query(CollectionItem)
+            .filter(CollectionItem.user_id == user.id, CollectionItem.stamp_id == stamp.id)
+            .first()
+        )
         db.add(
             Post(
-                user_id=users[username].id,
-                stamp_id=_stamp_by_catalog(db, catalog_no).id,
+                user_id=user.id,
+                stamp_id=stamp.id,
+                item_id=item.id if item else None,
+                catalog_no=stamp.catalog_no,
+                name=stamp.name,
+                photo_path=item.photo_path if item else "",
                 body=body,
             )
         )
@@ -661,17 +788,101 @@ def _backfill_demo_photos(db: Session) -> None:
         .all()
     )
     for item in items:
-        if item.status not in {"own", "swap"} or item.photo_path:
+        if item.status not in {"own", "swap"} or item.photo_path or not item.stamp:
             continue
         item.photo_path = copy_catalog_image_as_photo(item.user_id, item.stamp.image_path)
+
+
+def _backfill_item_labels(db: Session) -> None:
+    items = db.query(CollectionItem).options(joinedload(CollectionItem.stamp)).all()
+    for item in items:
+        if item.stamp:
+            if not item.name:
+                item.name = item.stamp.name
+            if not item.catalog_no:
+                item.catalog_no = item.stamp.catalog_no
+
+
+def _backfill_post_photos(db: Session) -> None:
+    posts = db.query(Post).all()
+    for post in posts:
+        item = None
+        if post.item_id:
+            item = db.get(CollectionItem, post.item_id)
+        elif post.stamp_id:
+            item = (
+                db.query(CollectionItem)
+                .filter(CollectionItem.user_id == post.user_id, CollectionItem.stamp_id == post.stamp_id)
+                .first()
+            )
+            if item:
+                post.item_id = item.id
+        stamp = db.get(Stamp, post.stamp_id) if post.stamp_id else None
+        if item and not post.photo_path:
+            post.photo_path = item.photo_path
+        if not post.name:
+            post.name = (item.name if item else "") or (stamp.name if stamp else "")
+        if not post.catalog_no:
+            post.catalog_no = (item.catalog_no if item else "") or (stamp.catalog_no if stamp else "")
+
+
+def _seed_comments(db: Session) -> None:
+    if db.query(PostComment).first():
+        return
+    users = {user.username: user for user in db.query(User).all()}
+    posts = db.query(Post).order_by(Post.id.asc()).all()
+    samples = [
+        ("achuo", "齿孔看起来是原齿。有实寄的话更想换。"),
+        ("xiaofeng", "同城的话可以面交看一眼背胶。"),
+        ("miaopiao", "眼睛真的圆。贰拾文复品还在。"),
+        ("fangcun", "品相写在实拍上最清楚，目录图对不上自己那一张。"),
+    ]
+    if not posts:
+        return
+    for index, (username, body) in enumerate(samples):
+        author = users.get(username)
+        if not author:
+            continue
+        db.add(PostComment(post_id=posts[index % len(posts)].id, user_id=author.id, body=body))
+
+
+def _ensure_demo_match(db: Session) -> None:
+    fangcun = db.query(User).filter(User.username == "fangcun").first()
+    stamp = db.query(Stamp).filter(Stamp.catalog_no == "CQ-BT").first()
+    if not fangcun or not stamp:
+        return
+    exists = (
+        db.query(CollectionItem)
+        .filter(CollectionItem.user_id == fangcun.id, CollectionItem.stamp_id == stamp.id)
+        .first()
+    )
+    if exists:
+        return
+    db.add(
+        CollectionItem(
+            user_id=fangcun.id,
+            stamp_id=stamp.id,
+            catalog_no=stamp.catalog_no,
+            name=stamp.name,
+            status="want",
+            note="想换一枚重庆书信馆",
+            photo_path="",
+        )
+    )
 
 
 def seed_if_empty(db: Session) -> None:
     ensure_stamp_columns()
     ensure_user_columns()
     ensure_collection_columns()
+    ensure_post_columns()
+    ensure_swap_columns()
     _sync_stamps(db)
     _seed_demo_people(db)
     _backfill_demo_photos(db)
+    _backfill_item_labels(db)
+    _backfill_post_photos(db)
+    _ensure_demo_match(db)
+    _seed_comments(db)
     ensure_admin(db)
     db.commit()

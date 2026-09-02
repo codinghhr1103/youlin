@@ -77,14 +77,23 @@ class CollectionOut(BaseModel):
     status: str
     note: str
     photo_path: str = ""
-    stamp: StampOut
+    name: str = ""
+    catalog_no: str = ""
+    stamp_id: int | None = None
+    stamp: StampOut | None = None
 
     model_config = {"from_attributes": True}
 
 
-class PostIn(BaseModel):
-    body: str = Field(min_length=1, max_length=500)
-    stamp_id: int | None = None
+class CommentIn(BaseModel):
+    body: str = Field(min_length=1, max_length=240)
+
+
+class CommentOut(BaseModel):
+    id: int
+    body: str
+    created_at: datetime
+    author: UserPublic
 
 
 class PostOut(BaseModel):
@@ -94,14 +103,27 @@ class PostOut(BaseModel):
     like_count: int
     liked: bool
     author: UserPublic
-    stamp: StampOut | None
+    stamp: StampOut | None = None
     photo_path: str = ""
+    name: str = ""
+    catalog_no: str = ""
+    item_id: int | None = None
+    comments: list[CommentOut] = []
+
+
+class SwapPiece(BaseModel):
+    id: int
+    name: str
+    catalog_no: str
+    photo_path: str = ""
+    note: str = ""
+    stamp_id: int | None = None
 
 
 class SwapIn(BaseModel):
     partner_id: int
-    offer_stamp_id: int
-    request_stamp_id: int
+    offer_item_id: int
+    request_item_id: int
     message: str = ""
 
 
@@ -112,8 +134,11 @@ class SwapOut(BaseModel):
     created_at: datetime
     proposer: UserPublic
     partner: UserPublic
-    offer_stamp: StampOut
-    request_stamp: StampOut
+    offer: SwapPiece
+    request: SwapPiece
+    same_city: bool = False
+    their_email: str | None = None
+    their_phone: str | None = None
 
 
 class ProfileUpdate(BaseModel):

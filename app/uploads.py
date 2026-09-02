@@ -37,7 +37,9 @@ def delete_upload(public_path: str) -> None:
         path.unlink(missing_ok=True)
 
 
-def save_collection_photo(user_id: int, upload: UploadFile) -> str:
+def save_photo(user_id: int, upload: UploadFile, kind: str) -> str:
+    if kind not in {"collection", "posts"}:
+        raise HTTPException(status_code=400, detail="无法保存这类图片")
     raw = upload.file.read(MAX_BYTES + 1)
     if not raw:
         raise HTTPException(status_code=400, detail="请先拍一张实拍图")
@@ -50,11 +52,15 @@ def save_collection_photo(user_id: int, upload: UploadFile) -> str:
     except (UnidentifiedImageError, OSError, ValueError) as exc:
         raise HTTPException(status_code=400, detail="只支持 JPEG、PNG 或 WebP 实拍图") from exc
     image.thumbnail((MAX_EDGE, MAX_EDGE))
-    folder = UPLOAD_DIR / "collection" / str(user_id)
+    folder = UPLOAD_DIR / kind / str(user_id)
     folder.mkdir(parents=True, exist_ok=True)
     name = f"{uuid.uuid4().hex}.jpg"
     image.save(folder / name, "JPEG", quality=88, optimize=True)
-    return f"/uploads/collection/{user_id}/{name}"
+    return f"/uploads/{kind}/{user_id}/{name}"
+
+
+def save_collection_photo(user_id: int, upload: UploadFile) -> str:
+    return save_photo(user_id, upload, "collection")
 
 
 def copy_catalog_image_as_photo(user_id: int, image_path: str) -> str:

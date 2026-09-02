@@ -607,6 +607,22 @@ select {
   resize: vertical;
 }
 
+.composer .row label {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.composer .row input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
 .row {
   display: flex;
   gap: 10px;
@@ -721,9 +737,95 @@ a.card:hover {
 
 .match {
   display: grid;
-  grid-template-columns: 180px 1fr auto;
+  gap: 14px;
+}
+
+.how-steps {
+  list-style: none;
+  margin: 0 0 32px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.how-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 16px;
+  align-items: start;
+}
+
+.how-step h3 {
+  margin: 0 0 6px;
+}
+
+.how-step p {
+  margin: 0;
+}
+
+.how-num {
+  font-family: var(--serif);
+  font-size: 28px;
+  line-height: 1;
+  color: var(--red);
+  min-width: 1.2em;
+}
+
+.comments {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.comment {
+  margin: 0;
+  font-size: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.comment-form {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-form input {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: #fff;
+}
+
+.swap-shots {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.swap-shots .stamp {
+  width: 120px;
+  cursor: default;
+}
+
+.swap-propose {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   align-items: center;
+}
+
+.swap-msg {
+  flex: 1;
+  min-width: 200px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
 }
 
 .badge {
