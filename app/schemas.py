@@ -119,4 +119,6 @@ class SwapOut(BaseModel):
 class ProfileUpdate(BaseModel):
     display_name: str | None = Field(default=None, min_length=1, max_length=20)
     city: str | None = Field(default=None, max_length=40)
+    email: str | None = Field(default=None, max_length=40)
+    phone: str | None = Field(default=None, max_length=40)
     bio: str | None = Field(default=None, max_length=240)

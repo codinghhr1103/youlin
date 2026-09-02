@@ -97,6 +97,10 @@ def update_me(
         user.display_name = payload.display_name.strip()
     if payload.city is not None:
         user.city = payload.city.strip()
+    if payload.email is not None:
+        user.email = normalize_contact("email", payload.email)
+    if payload.phone is not None:
+        user.phone = normalize_contact("phone", payload.phone)
     if payload.bio is not None:
         user.bio = payload.bio.strip()
     db.commit()
