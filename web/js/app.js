@@ -336,6 +336,12 @@ async function renderSettings(root) {
           <label>城市
             <input name="city" maxlength="40" value="${escapeHtml(me.city || "")}" placeholder="例如杭州" />
           </label>
+          <label>邮箱
+            <input name="email" maxlength="40" value="${escapeHtml(me.email || "")}" placeholder="例如 example@example.com" />
+          </label>
+          <label>手机号
+            <input name="phone" maxlength="40" value="${escapeHtml(me.phone || "")}" placeholder="例如 13800138000" />
+          </label>          
           <label>集邮简介
             <textarea name="bio" maxlength="240" placeholder="你在集什么？">${escapeHtml(me.bio || "")}</textarea>
           </label>
@@ -358,6 +364,8 @@ async function renderSettings(root) {
         body: JSON.stringify({
           display_name: form.get("display_name"),
           city: form.get("city") || "",
+          email: form.get("email") || "",
+          phone: form.get("phone") || "",
           bio: form.get("bio") || "",
         }),
       });
