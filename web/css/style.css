@@ -426,6 +426,37 @@ select {
   display: none;
 }
 
+.delete-want {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--muted);
+  background: rgba(255, 250, 241, 0.88);
+  cursor: pointer;
+}
+
+.delete-want:hover {
+  color: var(--red);
+}
+
+.delete-want svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
 .filters {
   display: flex;
   gap: 8px;

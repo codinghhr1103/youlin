@@ -106,12 +106,17 @@ function stampCard(stamp, extra = "", photoPath) {
   `;
 }
 
-function albumCard(item, caption) {
+function albumCard(item, caption, deletable = false) {
   const text = caption !== undefined ? caption : item.note;
-  const extra = text
+  const note = text
     ? `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${escapeHtml(text)}</div>`
     : "";
-  return stampCard(itemAsStamp(item), extra, item.photo_path || "");
+  const remove = deletable
+    ? `<button class="delete-want" type="button" data-item-id="${item.id}" aria-label="删除缺品" title="删除缺品">
+         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+       </button>`
+    : "";
+  return stampCard(itemAsStamp(item), `${note}${remove}`, item.photo_path || "");
 }
 
 function pieceCard(piece) {
@@ -1002,7 +1007,7 @@ async function renderAlbum(root) {
       <div class="grid">
         ${
           groups[key].length
-            ? groups[key].map((item) => albumCard(item)).join("")
+            ? groups[key].map((item) => albumCard(item, undefined, key === "want")).join("")
             : `<div class="empty">${key === "want" ? "还没有缺品。可先对照志号记下来。" : "空着。拍一张实拍图收进来。"}</div>`
         }
       </div>
@@ -1075,6 +1080,17 @@ async function renderAlbum(root) {
     `,
     "album"
   );
+  root.querySelectorAll(".delete-want").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      try {
+        await api(`/me/want/delete?item_id=${encodeURIComponent(button.dataset.itemId)}`, { method: "DELETE" });
+        await render();
+      } catch (err) {
+        button.title = err.message;
+      }
+    });
+  });
   const addForm = qs("#album-add");
   bindOwnedPhotoRule(addForm);
   bindPhotoPreview(qs("input[name=photo]", addForm), qs(".photo-preview", addForm));
@@ -1111,7 +1127,7 @@ async function renderSwap(root) {
     `
       <div class="section-title">
         <div>
-          <h2>交换</h2>
+          <h2>交换/SWAP</h2>
           <p class="muted">同城排在前面。看见实拍再约，同意之后才交换联系方式。邮邻不经手票，也不经手钱。</p>
         </div>
       </div>
@@ -1120,6 +1136,7 @@ async function renderSwap(root) {
           matches.length
             ? matches
                 .map((row) => {
+                  console.log(row);
                   const offer = row.you_offer[0];
                   const request = row.they_offer[0];
                   return `

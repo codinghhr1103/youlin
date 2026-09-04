@@ -149,6 +149,28 @@ def remove_collection(
     return {"ok": True}
 
 
+@router.delete("/me/want/delete")
+def remove_want(
+    item_id: int,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    item = (
+        db.query(CollectionItem)
+        .filter(
+            CollectionItem.id == item_id,
+            CollectionItem.user_id == user.id,
+            CollectionItem.status == "want",
+        )
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="缺品清单里没有这枚")
+    db.delete(item)
+    db.commit()
+    return {"ok": True}
+
+
 @router.get("/users/{username}/collection", response_model=list[CollectionOut])
 def user_collection(username: str, db: Annotated[Session, Depends(get_db)]):
     user = db.query(User).filter(User.username == username).first()
