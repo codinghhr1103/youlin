@@ -184,3 +184,190 @@ export const GUIDE_SECTIONS = [
     ],
   },
 ];
+
+export const GUIDE_SECTIONS_EN = [
+  {
+    id: "face",
+    title: "The stamp and its condition",
+    intro: "Start with the piece itself: gum on the back, how the edges were separated, mint or used, and where it is damaged.",
+    entries: [
+      {
+        id: "gum",
+        title: "Gum",
+        body: "The adhesive brushed on the back so the stamp can be stuck to an envelope. An unused mint stamp often has original gum: even, not washed. If a used stamp was soaked off in warm water, the gum thins, mottles, or disappears.",
+        note: "Do not soak a mint stamp “to clean it” — gum clumps and wrinkles in water. Do not mount stamps with tape or glue.",
+      },
+      {
+        id: "perf",
+        title: "Perforation",
+        body: "The printer punches a row of holes between stamps so they tear apart. Gauge is how many holes fall in 2 cm, e.g. 11½ or 12½; if vertical and horizontal differ, write 11½×11. There are also roulette and pin-perf issues, and imperforate stamps issued without holes on purpose.",
+        note: "Tear along the holes; yanking pulls perfs. If a swap copy has short or elongated perfs, say so in the note.",
+      },
+      {
+        id: "mint-used",
+        title: "Mint / used",
+        body: "Mint has not paid postage and usually still has gum. Used has been on mail. Used is not “worse”; many people collect covers. On Youlin, say whether you want mint or used before you swap.",
+        note: "Do not assume only mint is worth keeping. Youlin does not talk prices — only whether you want this copy.",
+      },
+      {
+        id: "cto",
+        title: "Postal cancel / CTO",
+        body: "A postal cancel is struck on mail that actually travelled. CTO (cancelled to order) is often done in bulk at a philatelic counter; the stamp never went through the post and often still has gum.",
+        note: "A CTO copy can look “mint with a cancel”. Do not call it postally used.",
+      },
+      {
+        id: "condition",
+        title: "Common faults",
+        body: "A thin is a layer of fibres lifted when the stamp was soaked. There are also creases, stains, short perfs, fading, and elongated holes. Hold it to the light before you swap and see whether the paper is even.",
+        note: "A faulty copy can still be marked for swap, but write the fault in the note. Do not let the other person find it on arrival.",
+      },
+    ],
+  },
+  {
+    id: "format",
+    title: "Formats",
+    intro: "The same issue can be a full sheet, a mini-pane, a souvenir sheet or a booklet. The names look alike; they are not the same thing.",
+    entries: [
+      {
+        id: "full-sheet",
+        title: "Full sheet",
+        body: "The printer’s whole sheet, stamps in rows, often with selvedge, colour bars, plate numbers and the printer’s name. Sheets take space; everyday swaps are usually singles torn along the perfs.",
+        note: "Tear along the holes and do not damage the neighbour. A sheet with a corner missing is no longer a complete sheet.",
+      },
+      {
+        id: "mini-pane",
+        title: "Mini-pane",
+        body: "A sheet issued in a smaller format, with fewer stamps and often a design or text in the margin. It is an official format, not a piece cut from a full sheet. More common from the 1990s on.",
+        note: "Calling a few stamps still joined from a full sheet a mini-pane will mislead the other person.",
+      },
+      {
+        id: "souvenir",
+        title: "Souvenir sheet",
+        body: "A small sheet designed on its own, usually one stamp (sometimes more), with a wide pictorial or inscribed margin. The sheet is a collecting unit by itself.",
+        note: "Do not trim the margin. The margin is part of the sheet.",
+      },
+      {
+        id: "set-sheet",
+        title: "Set sheet (xiaoquantzhang)",
+        body: "Every value of a set printed on one piece of paper, so the set comes complete. It means “the set on one paper”, unlike a mini-pane (a smaller sheet format) or a souvenir sheet (often one stamp on one paper).",
+        note: "The Chinese names for set sheet, souvenir sheet and mini-pane sit close together. Write the full name, or attach a photo.",
+      },
+      {
+        id: "booklet",
+        title: "Booklet",
+        body: "Stamps bound into a small book for the pocket. Cover and interleaves (the blank paper joining the stamps) are part of it; some interleaves have unusual perfs on both sides.",
+        note: "Breaking a booklet for singles ends the “complete booklet”. If you only collect singles, say “from a booklet”.",
+      },
+      {
+        id: "block",
+        title: "Multiple / block of four",
+        body: "Two or more stamps still joined: horizontal pair, vertical pair, block of four (2×2). What matters is that they were not torn apart, whether the designs match or not.",
+        note: "Once torn, they are singles. Do not split a multiple “to make mailing easier”.",
+      },
+    ],
+  },
+  {
+    id: "numbering",
+    title: "PRC catalogue numbers",
+    intro: "Most PRC stamps carry a number on the face. Knowing the older Ji/Te series, the Cultural Revolution and serial issues, J/T, and year-serial numbers saves a lot of matching.",
+    entries: [
+      {
+        id: "catalog-no",
+        title: "What a catalogue number is",
+        body: "The number printed on the stamp, identifying the set and the value. Quote it first in a swap; “that monkey stamp” is not enough. Check StampDIR or PostalWiki from the catalogues page.",
+        note: "The same theme is reissued, New Year stamps especially. Without a number it is easy to match the wrong set.",
+      },
+      {
+        id: "lao-jite",
+        title: "Older Ji / Te",
+        body: "Roughly 1949–1967, commemoratives were marked 纪 (Ji) and specials 特 (Te), e.g. Ji 1, Te 1. Collectors call this span the older Ji/Te period. It is not the same numbering as later J/T or year-serial issues.",
+        note: "“Older Ji/Te” is a period name, not the name of one set.",
+      },
+      {
+        id: "wenge",
+        title: "Wen issues / serial numbers",
+        body: "After the Ji/Te prefixes stopped, catalogues call a 1967–1970 group the Wen issues; from 1970–1973 the face shows Arabic serial numbers. This is a change of numbering, not another post office.",
+        note: "Catalogue order and the words on the stamp may not match. Trust the catalogue number when you check.",
+      },
+      {
+        id: "jt",
+        title: "J / T issues",
+        body: "From 1974 to 1991, commemoratives used J and specials T, plus a serial, e.g. J.1, T.46 (the 1980 Year of the Monkey). This sits after older Ji/Te and before year-serial numbering.",
+        note: "J and T serials run separately, not by year. T.46 is not a 1946 stamp.",
+      },
+      {
+        id: "biannian",
+        title: "Year-serial issues",
+        body: "From 1992, J/T stopped. Numbers became year–serial, e.g. 1992-1. Commemoratives and specials of that year share the sequence. “Year issues” usually means this period.",
+        note: "The number is the year of issue. If the name does not match, look the year up in a catalogue; do not guess from the lunar animal’s nickname.",
+      },
+      {
+        id: "definitive",
+        title: "Definitives",
+        body: "Long-running, many values, for ordinary postage. Numbers often include 普 (Pu). Definitives are reprinted, on new paper, with new perfs; the same design can have several versions. They are not the same collecting line as a year’s commemoratives.",
+        note: "Matching a definitive by design is not enough. Check the number and the printing.",
+      },
+      {
+        id: "personalized",
+        title: "Personalised / New Year specials",
+        body: "Besides commemoratives and year issues there are personalised service stamps, New Year specials, greeting-card stamps and so on. They are official issues, but they are not collected as ordinary commemorative sets.",
+        note: "Bundling a personalised stamp with that year’s commemorative set as “one set” may not be accepted. Name the kind when you swap.",
+      },
+    ],
+  },
+  {
+    id: "start",
+    title: "Starting a collection",
+    intro: "Once the words are clear, what remains is how you keep stamps and how you describe them. Youlin does not expertise and does not quote prices.",
+    entries: [
+      {
+        id: "face-value",
+        title: "Face value",
+        body: "The postage printed on the stamp — what the post office charged to carry a letter. Market talk among collectors is a different matter. Youlin does not quote prices or value stamps; face value is only for identifying the piece.",
+        note: "A high face value is not “better”, and a low one is not something to throw away.",
+      },
+      {
+        id: "set",
+        title: "Set",
+        body: "A group issued together on one theme, with a fixed number of stamps. Missing one means the set is incomplete. Say whether you are swapping a whole set or a single.",
+        note: "Do not assemble stamps of the same theme from different years and call them a set.",
+      },
+      {
+        id: "reprint",
+        title: "Reprint / original",
+        body: "The same design printed again is a reprint; the first printing is the original. Early definitives and some commemoratives were reprinted, with differences in paper, perforation and colour.",
+        note: "Looking only at the design will take a reprint for an original. If unsure, write “printing not checked” in the note.",
+      },
+      {
+        id: "margin",
+        title: "Selvedge / imprint",
+        body: "The extra white paper around a stamp is selvedge; printer’s name, plate number and colour bars in the margin are the imprint. A copy with margin or imprint is not the same as a trimmed “copy without margin”.",
+        note: "Trimmed selvedge cannot be put back. If they want an imprint, do not trim it before you mail.",
+      },
+      {
+        id: "storage",
+        title: "Mounts and stockbooks",
+        body: "Singles go in clear mounts, then into an album. Do not use household tape, glue, or cheap plastic that sticks. Mint stamps with gum especially dislike heat, damp and pressure.",
+        note: "Some cheap album pages will lift the gum. Better that the stamp stays in a mount than that it looks “neatly stuck down”.",
+      },
+      {
+        id: "watermark",
+        title: "Watermark / paper",
+        body: "Some paper shows a watermark against the light; thickness and fibres also vary. For a beginner it is enough to know that the same design is sometimes told apart only by paper and watermark.",
+        note: "Do not use liquid or flame to “bring up” a watermark. Learn to use a catalogue first; expertising comes later.",
+      },
+      {
+        id: "how-to-start",
+        title: "How to start collecting",
+        body: "You can collect one country, one theme (New Year, buildings, birds), or year by year. Start with stamps you understand and like looking at; you need not “complete China”. Duplicates go for swap; missing ones are wants.",
+        note: "Trying to collect every PRC issue from Ji 1 to this year is a fast way to tire. Youlin is built for registering what you already hold.",
+      },
+      {
+        id: "describe",
+        title: "How to describe a stamp in a swap",
+        body: "A useful order: catalogue number, name, mint or used, condition (thin, short perfs, crease), and whether selvedge or imprint is present. Write it in the album note and the post so the other person guesses less.",
+        note: "A blurry photo and no number make a match unlikely.",
+      },
+    ],
+  },
+];
