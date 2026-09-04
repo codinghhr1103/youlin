@@ -1,8 +1,12 @@
 # 邮邻 Youlin
 
+[中文](README.md) · [English](README.en.md)
+
 给年轻集邮爱好者的收藏与社交网站：整理数字邮册、晒票、按缺品和复品匹配交换。
 
 邮邻只做邻里式交换，**不做交易、不报行情、不评估票价**。现在是一个可运行的本地原型，也已能部署到公网，欢迎一起把它做得更像一个真正能用的小站。
+
+站点界面可在顶栏切换 **中文 / English**。浏览器语言不是中文时，会默认进入英文。选择会记在本机。
 
 仓库：[github.com/codinghhr1103/youlin](https://github.com/codinghhr1103/youlin)
 
@@ -71,6 +75,8 @@ youlin/
 │   ├── index.html
 │   ├── css/style.css
 │   ├── js/app.js         # 页面渲染与路由
+│   ├── js/i18n.js        # 中英界面文案
+│   ├── js/guide.js       # 集邮入门（中英）
 │   └── stamps/           # 公有领域票图与 manifest
 ├── scripts/              # 从维基共享重新拉取票图
 ├── render.yaml           # Render Blueprint
@@ -182,7 +188,7 @@ PR 里请写清：
 ### 代码约定
 
 - 跟现有风格走：后端是小型 FastAPI 路由 + Pydantic schema；前端是 `web/js/app.js` 里的原生渲染，暂时不引入 React / Vue / 打包器。
-- 用户可见文案用简体中文。
+- 用户可见文案放在 `web/js/i18n.js`，中英对照；新增句子时两种语言一起补。
 - 新增 API 请同时考虑未登录、已登录、被停用账号这几种情况。
 - 不要为了「完整目录」去加入受版权保护的当代票图。能补的是 1931 年以前、可核验授权的扫描件，并在 `manifest.json` 写清出处。
 
