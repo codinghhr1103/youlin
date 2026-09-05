@@ -130,12 +130,17 @@ function stampCard(stamp, extra = "", photoPath) {
   `;
 }
 
-function albumCard(item, caption) {
+function albumCard(item, caption, deletable = false) {
   const text = caption !== undefined ? caption : item.note;
-  const extra = text
+  const note = text
     ? `<div class="tiny" style="position:absolute;left:16px;bottom:10px">${escapeHtml(text)}</div>`
     : "";
-  return stampCard(itemAsStamp(item), extra, item.photo_path || "");
+  const remove = deletable
+    ? `<button class="delete-collection" type="button" data-item-id="${item.id}" aria-label="删除邮票" title="删除邮票">
+         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+       </button>`
+    : "";
+  return stampCard(itemAsStamp(item), `${note}${remove}`, item.photo_path || "");
 }
 
 function pieceCard(piece) {
@@ -940,7 +945,7 @@ async function renderAlbum(root) {
       <div class="grid">
         ${
           groups[key].length
-            ? groups[key].map((item) => albumCard(item)).join("")
+            ? groups[key].map((item) => albumCard(item, undefined, true)).join("")
             : `<div class="empty">${key === "want" ? t("album.emptyWant") : t("album.emptyOwn")}</div>`
         }
       </div>
@@ -1013,6 +1018,18 @@ async function renderAlbum(root) {
     `,
     "album"
   );
+  root.querySelectorAll(".delete-collection").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      if (!window.confirm(t("album.confirmDelete"))) return;
+      try {
+        await api(`/me/collection/${encodeURIComponent(button.dataset.itemId)}`, { method: "DELETE" });
+        await render();
+      } catch (err) {
+        button.title = err.message;
+      }
+    });
+  });
   const addForm = qs("#album-add");
   bindOwnedPhotoRule(addForm);
   bindPhotoPreview(qs("input[name=photo]", addForm), qs(".photo-preview", addForm));
