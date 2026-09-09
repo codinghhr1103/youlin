@@ -35,6 +35,7 @@ class UserPublic(BaseModel):
     city: str
     bio: str
     created_at: datetime
+    disk_size: int = 0
 
     model_config = {"from_attributes": True}
 

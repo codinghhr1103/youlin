@@ -88,6 +88,14 @@ function formatTime(iso) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function formatDiskSize(bytes) {
+  const size = Number(bytes) || 0;
+  const gigabyte = 1000 ** 3;
+  const megabyte = 1000 ** 2;
+  if (size >= gigabyte) return `${(size / gigabyte).toFixed(2)}G`;
+  return `${(size / megabyte).toFixed(3)}M`;
+}
+
 function itemAsStamp(item) {
   const raw = {
     ...(item.stamp || {}),
@@ -1281,7 +1289,11 @@ async function renderProfile(root, username) {
     `
       <div class="section-title">
         <div>
-          <h2>${escapeHtml(user.display_name)}</h2>
+          <h2>${escapeHtml(user.display_name)}${
+            state.user?.username === user.username
+              ? ` <span class="profile-usage">${formatDiskSize(user.disk_size)}</span>`
+              : ""
+          }</h2>
           <p class="muted">${escapeHtml(user.city || t("common.noCity"))} · ${escapeHtml(user.bio || t("profile.noBio"))}</p>
         </div>
         ${
